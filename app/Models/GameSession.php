@@ -3,49 +3,57 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class GameSession extends Model
 {
-    protected $table = 'game_sessions';
+    use HasFactory;
 
     protected $fillable = [
-        'machine_id', 'game_id', 'pricing_mode_id', 'pricing_reference_id',
-        'customer_id', 'start_time', 'end_time',
-        'computed_price', 'status', 'created_by', 'closed_by'
+        'machine_id',
+        'game_id',
+        'pricing_mode_id',
+        'pricing_reference_id',
+        'customer_id',
+        'start_time',
+        'ended_at',
+        'computed_price',
+        'status'
     ];
 
-    public function machine()
-    {
-        return $this->belongsTo(Machine::class);
-    }
+    protected $casts = [
+        'start_time' => 'datetime',
+        'ended_at' => 'datetime',
+        'computed_price' => 'decimal:2'
+    ];
 
+    // 🎮 Game
     public function game()
     {
         return $this->belongsTo(Game::class);
     }
 
-    public function pricingMode()
-    {
-        return $this->belongsTo(PricingMode::class);
-    }
-
-    public function pricingReference()
+    // 💰 Pricing (utilise pricing_reference_id)
+    public function gamePricing()
     {
         return $this->belongsTo(GamePricing::class, 'pricing_reference_id');
     }
 
+    // 🖥️ Machine
+    public function machine()
+    {
+        return $this->belongsTo(Machine::class);
+    }
+
+    // 👤 Customer
     public function customer()
     {
         return $this->belongsTo(Customer::class);
     }
 
-    public function creator()
+    // 🏷️ Pricing Mode
+    public function pricingMode()
     {
-        return $this->belongsTo(User::class, 'created_by');
-    }
-
-    public function closer()
-    {
-        return $this->belongsTo(User::class, 'closed_by');
+        return $this->belongsTo(PricingMode::class);
     }
 }

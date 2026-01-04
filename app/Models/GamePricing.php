@@ -7,17 +7,32 @@ use Illuminate\Database\Eloquent\Model;
 class GamePricing extends Model
 {
     protected $fillable = [
-        'game_id', 'pricing_mode_id', 'duration_minutes', 'price', 'notes'
+        'game_id',
+        'pricing_mode_id',
+        'duration_minutes',
+        'price'
     ];
 
+    protected $casts = [
+        'price' => 'decimal:2',
+        'duration_minutes' => 'integer'
+    ];
+
+    // 🎮 Game
     public function game()
     {
-        return $this->belongsTo(Game::class, 'game_id');
+        return $this->belongsTo(Game::class);
     }
 
-    public function mode()
+    // 🏷️ Pricing Mode
+    public function pricingMode()
     {
-        return $this->belongsTo(PricingMode::class, 'pricing_mode_id');
+        return $this->belongsTo(PricingMode::class);
+    }
+
+    // 📊 Sessions utilisant ce pricing
+    public function sessions()
+    {
+        return $this->hasMany(GameSession::class, 'pricing_reference_id');
     }
 }
-

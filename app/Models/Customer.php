@@ -6,8 +6,13 @@ use Illuminate\Database\Eloquent\Model;
 
 class Customer extends Model
 {
-    protected $fillable = ['name', 'phone', 'email', 'points', 'notes'];
+    protected $fillable = [
+        'name',
+        'phone',
+        'email'
+    ];
 
+    // 📊 Sessions du client
     public function sessions()
     {
         return $this->hasMany(GameSession::class);

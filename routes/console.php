@@ -1,8 +1,16 @@
 <?php
 
-use Illuminate\Foundation\Inspiring;
-use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Schedule;
 
-Artisan::command('inspire', function () {
-    $this->comment(Inspiring::quote());
-})->purpose('Display an inspiring quote');
+// ⏰ Auto-stop toutes les minutes
+Schedule::call(function () {
+    $controller = app(\App\Http\Controllers\Api\GameSessionController::class);
+    $result = $controller->checkAutoStop();
+    
+    $data = $result->getData();
+    if ($data->stopped_count > 0) {
+        \Log::info("Auto-stop: {$data->stopped_count} sessions arrêtées", [
+            'sessions' => $data->stopped_sessions
+        ]);
+    }
+})->everyMinute()->name('auto-stop-sessions');
