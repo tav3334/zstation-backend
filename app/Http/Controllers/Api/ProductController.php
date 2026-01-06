@@ -128,4 +128,130 @@ class ProductController extends Controller
             'product' => $product
         ]);
     }
+
+    /**
+     * Créer un nouveau produit
+     * POST /api/products
+     */
+    public function store(Request $request)
+    {
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'category' => 'required|in:snack,drink',
+            'price' => 'required|numeric|min:0',
+            'size' => 'nullable|string|max:50',
+            'stock' => 'required|integer|min:0',
+            'image' => 'nullable|string|max:10'
+        ]);
+
+        $product = Product::create([
+            'name' => $request->name,
+            'category' => $request->category,
+            'price' => $request->price,
+            'size' => $request->size,
+            'stock' => $request->stock,
+            'is_available' => true,
+            'image' => $request->image ?? '📦'
+        ]);
+
+        return response()->json([
+            'message' => 'Produit créé avec succès',
+            'product' => $product
+        ], 201);
+    }
+
+    /**
+     * Mettre à jour un produit
+     * PUT /api/products/{id}
+     */
+    public function update(Request $request, $id)
+    {
+        $request->validate([
+            'name' => 'sometimes|required|string|max:255',
+            'category' => 'sometimes|required|in:snack,drink',
+            'price' => 'sometimes|required|numeric|min:0',
+            'size' => 'nullable|string|max:50',
+            'stock' => 'sometimes|required|integer|min:0',
+            'is_available' => 'sometimes|boolean',
+            'image' => 'nullable|string|max:10'
+        ]);
+
+        $product = Product::findOrFail($id);
+        $product->update($request->all());
+
+        return response()->json([
+            'message' => 'Produit mis à jour avec succès',
+            'product' => $product
+        ]);
+    }
+
+    /**
+     * Supprimer un produit
+     * DELETE /api/products/{id}
+     */
+    public function destroy($id)
+    {
+        $product = Product::findOrFail($id);
+
+        // Vérifier s'il y a des ventes liées
+        $salesCount = ProductSale::where('product_id', $id)->count();
+
+        if ($salesCount > 0) {
+            // Ne pas supprimer, juste désactiver
+            $product->update(['is_available' => false]);
+            return response()->json([
+                'message' => 'Produit désactivé (des ventes existent pour ce produit)',
+                'product' => $product
+            ]);
+        }
+
+        $product->delete();
+
+        return response()->json([
+            'message' => 'Produit supprimé avec succès'
+        ]);
+    }
+
+    /**
+     * Liste des produits avec stock faible
+     * GET /api/products/low-stock
+     */
+    public function lowStock()
+    {
+        $threshold = 10; // Stock minimum avant alerte
+
+        $products = Product::where('is_available', true)
+            ->where('stock', '<=', $threshold)
+            ->orderBy('stock', 'asc')
+            ->get()
+            ->map(function ($product) {
+                return [
+                    'id' => $product->id,
+                    'name' => $product->name,
+                    'size' => $product->size,
+                    'category' => $product->category,
+                    'stock' => $product->stock,
+                    'price' => (float) $product->price,
+                    'image' => $product->image
+                ];
+            });
+
+        return response()->json([
+            'products' => $products,
+            'count' => $products->count()
+        ]);
+    }
+
+    /**
+     * Obtenir tous les produits (y compris inactifs) pour l'admin
+     * GET /api/products/all
+     */
+    public function all()
+    {
+        $products = Product::orderBy('category')
+            ->orderBy('name')
+            ->get();
+
+        return response()->json($products);
+    }
 }

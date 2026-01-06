@@ -49,19 +49,26 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/products', [ProductController::class, 'index']);
     Route::post('/products/sell', [ProductController::class, 'sell']);
     Route::get('/products/sales', [ProductController::class, 'sales']);
-    Route::put('/products/{id}/stock', [ProductController::class, 'updateStock']);
+    Route::get('/products/low-stock', [ProductController::class, 'lowStock']);
 
 });
 
 // ========== ROUTES ADMIN UNIQUEMENT ==========
 Route::middleware(['auth:sanctum', 'admin'])->group(function () {
-    
+
     // Gestion utilisateurs
     Route::post('/register', [AuthController::class, 'register']);
-    
+
     // Supprimer paiements
     Route::delete('/payments/{id}', [PaymentController::class, 'destroy']);
-    
+
+    // Gestion complète des produits (admin seulement)
+    Route::get('/products/all', [ProductController::class, 'all']);
+    Route::post('/products', [ProductController::class, 'store']);
+    Route::put('/products/{id}', [ProductController::class, 'update']);
+    Route::put('/products/{id}/stock', [ProductController::class, 'updateStock']);
+    Route::delete('/products/{id}', [ProductController::class, 'destroy']);
+
 });
 
 // ========== TEST ==========
