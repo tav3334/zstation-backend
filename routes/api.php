@@ -163,3 +163,86 @@ Route::get('/debug/migrate', function () {
         ]);
     }
 });
+
+// Temporary route to seed demo data (REMOVE IN PRODUCTION!)
+Route::get('/debug/seed-data', function () {
+    try {
+        DB::beginTransaction();
+
+        // Insert machines
+        $machines = [
+            ['id' => 1, 'name' => 'PS5 - Station 1', 'status' => 'available'],
+            ['id' => 2, 'name' => 'PS5 - Station 2', 'status' => 'available'],
+            ['id' => 3, 'name' => 'PS5 - Station 3', 'status' => 'available'],
+            ['id' => 4, 'name' => 'PS5 - Station 4', 'status' => 'available'],
+            ['id' => 5, 'name' => 'PS5 - VIP 1', 'status' => 'available'],
+            ['id' => 6, 'name' => 'PS5 - VIP 2', 'status' => 'available'],
+        ];
+
+        foreach ($machines as $machine) {
+            \App\Models\Machine::updateOrCreate(['id' => $machine['id']], $machine);
+        }
+
+        // Insert products
+        $products = [
+            ['id' => 1, 'name' => 'Popcorn', 'category' => 'snack', 'price' => 3.00, 'size' => 'petit', 'stock' => 98, 'available' => 1, 'icon' => '🍿'],
+            ['id' => 2, 'name' => 'Popcorn', 'category' => 'snack', 'price' => 5.00, 'size' => 'grand', 'stock' => 78, 'available' => 1, 'icon' => '🍿'],
+            ['id' => 3, 'name' => 'Coca-Cola', 'category' => 'drink', 'price' => 5.00, 'size' => 'petit', 'stock' => 50, 'available' => 1, 'icon' => '🥤'],
+            ['id' => 4, 'name' => 'Coca-Cola', 'category' => 'drink', 'price' => 7.00, 'size' => 'grand', 'stock' => 50, 'available' => 1, 'icon' => '🥤'],
+            ['id' => 5, 'name' => 'Sprite', 'category' => 'drink', 'price' => 5.00, 'size' => 'petit', 'stock' => 49, 'available' => 1, 'icon' => '🥤'],
+            ['id' => 7, 'name' => 'Eau minérale', 'category' => 'drink', 'price' => 3.00, 'size' => null, 'stock' => 100, 'available' => 1, 'icon' => '💧'],
+            ['id' => 8, 'name' => 'Cafe', 'category' => 'drink', 'price' => 6.00, 'size' => null, 'stock' => 0, 'available' => 1, 'icon' => '☕'],
+        ];
+
+        foreach ($products as $product) {
+            \App\Models\Product::updateOrCreate(['id' => $product['id']], $product);
+        }
+
+        // Insert games
+        $games = [
+            ['id' => 1, 'name' => 'FIFA 24', 'icon' => '⚽'],
+            ['id' => 2, 'name' => 'Call of Duty', 'icon' => '🎮'],
+            ['id' => 3, 'name' => 'Fortnite', 'icon' => '🎯'],
+            ['id' => 4, 'name' => 'GTA V', 'icon' => '🚗'],
+        ];
+
+        foreach ($games as $game) {
+            \App\Models\Game::updateOrCreate(['id' => $game['id']], $game);
+        }
+
+        // Insert game pricings
+        $pricings = [
+            ['id' => 1, 'game_id' => 1, 'duration_minutes' => 60, 'price' => 10.00],
+            ['id' => 2, 'game_id' => 1, 'duration_minutes' => 120, 'price' => 18.00],
+            ['id' => 3, 'game_id' => 2, 'duration_minutes' => 60, 'price' => 10.00],
+            ['id' => 4, 'game_id' => 2, 'duration_minutes' => 120, 'price' => 18.00],
+            ['id' => 5, 'game_id' => 3, 'duration_minutes' => 60, 'price' => 10.00],
+            ['id' => 6, 'game_id' => 3, 'duration_minutes' => 120, 'price' => 18.00],
+            ['id' => 7, 'game_id' => 4, 'duration_minutes' => 60, 'price' => 10.00],
+            ['id' => 8, 'game_id' => 4, 'duration_minutes' => 120, 'price' => 18.00],
+        ];
+
+        foreach ($pricings as $pricing) {
+            \App\Models\GamePricing::updateOrCreate(['id' => $pricing['id']], $pricing);
+        }
+
+        DB::commit();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Demo data seeded successfully',
+            'counts' => [
+                'machines' => count($machines),
+                'products' => count($products),
+                'games' => count($games),
+                'pricings' => count($pricings)
+            ]
+        ]);
+    } catch (\Exception $e) {
+        DB::rollBack();
+        return response()->json([
+            'success' => false,
+            'error' => $e->getMessage()
+        ]);
+    }
+});
