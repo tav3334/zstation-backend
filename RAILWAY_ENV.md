@@ -17,7 +17,7 @@ DB_USERNAME=${{MYSQL.USER}}
 DB_PASSWORD=${{MYSQL.PASSWORD}}
 
 # CORS - TRÈS IMPORTANT pour la connexion frontend
-FRONTEND_URL=https://zstation-frontend.vercel.app
+FRONTEND_URL=https://zstation-nine.vercel.app
 
 # Session et Cache
 SESSION_DRIVER=file

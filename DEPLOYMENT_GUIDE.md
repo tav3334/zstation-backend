@@ -3,7 +3,7 @@
 ## 🎯 URLs de l'application
 
 ### Frontend (Vercel)
-- **URL**: https://zstation-frontend.vercel.app
+- **URL**: https://zstation-nine.vercel.app
 - **Dashboard Vercel**: https://vercel.com/dashboard
 
 ### Backend (Railway)
@@ -42,7 +42,7 @@ APP_DEBUG=false
 APP_URL=https://zstation.up.railway.app
 
 # Frontend CORS (TRÈS IMPORTANT!)
-FRONTEND_URL=https://zstation-frontend.vercel.app
+FRONTEND_URL=https://zstation-nine.vercel.app
 
 # Session & Cache
 SESSION_DRIVER=file
@@ -161,7 +161,7 @@ Réponse attendue :
 
 **Solution** :
 1. Allez dans Railway → Variables
-2. Ajoutez `FRONTEND_URL=https://zstation-frontend.vercel.app`
+2. Ajoutez `FRONTEND_URL=https://zstation-nine.vercel.app`
 3. Redéployez
 
 ### Problème : 404 sur toutes les routes API
