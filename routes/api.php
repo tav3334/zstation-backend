@@ -375,10 +375,11 @@ Route::get('/debug/update-passwords', function () {
                 'updated_at' => now()
             ]);
 
-        // Update agent password
+        // Update agent email and password (fix typo from zsattion to zstation)
         DB::table('users')
-            ->where('email', 'Walid@zsattion.ma')
+            ->where('email', 'LIKE', 'Walid@%')
             ->update([
+                'email' => 'Walid@zstation.ma',
                 'password' => Hash::make('zstation2026'),
                 'updated_at' => now()
             ]);
@@ -390,7 +391,7 @@ Route::get('/debug/update-passwords', function () {
             'message' => 'Passwords updated successfully with bcrypt hashing',
             'users' => [
                 ['email' => 'Ziad@zstation.ma', 'password' => 'essaifi2026', 'role' => 'admin'],
-                ['email' => 'Walid@zsattion.ma', 'password' => 'zstation2026', 'role' => 'agent']
+                ['email' => 'Walid@zstation.ma', 'password' => 'zstation2026', 'role' => 'agent']
             ]
         ]);
     } catch (\Exception $e) {
