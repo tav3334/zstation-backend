@@ -138,3 +138,28 @@ Route::get('/debug/users', function () {
         ]);
     }
 });
+
+// Temporary route to run migrations (REMOVE IN PRODUCTION!)
+Route::get('/debug/migrate', function () {
+    try {
+        \Illuminate\Support\Facades\Artisan::call('migrate', ['--force' => true]);
+        $migrateOutput = \Illuminate\Support\Facades\Artisan::output();
+
+        \Illuminate\Support\Facades\Artisan::call('db:seed', [
+            '--class' => 'TestUserSeeder',
+            '--force' => true
+        ]);
+        $seedOutput = \Illuminate\Support\Facades\Artisan::output();
+
+        return response()->json([
+            'success' => true,
+            'migrate_output' => $migrateOutput,
+            'seed_output' => $seedOutput
+        ]);
+    } catch (\Exception $e) {
+        return response()->json([
+            'success' => false,
+            'error' => $e->getMessage()
+        ]);
+    }
+});
