@@ -12,6 +12,10 @@ fi
 echo "📦 Running migrations..."
 php artisan migrate --force
 
+# Run seeders
+echo "🌱 Running seeders..."
+php artisan db:seed --class=TestUserSeeder --force
+
 # Clear and cache config
 echo "🔧 Caching configuration..."
 php artisan config:cache
