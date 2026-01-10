@@ -114,3 +114,27 @@ Route::get('/health', function () {
         'database' => DB::connection()->getDatabaseName()
     ]);
 });
+
+// Debug route to check database
+Route::get('/debug/users', function () {
+    try {
+        $users = \App\Models\User::all();
+        return response()->json([
+            'success' => true,
+            'count' => $users->count(),
+            'users' => $users->map(function($u) {
+                return [
+                    'id' => $u->id,
+                    'name' => $u->name,
+                    'email' => $u->email,
+                    'role' => $u->role
+                ];
+            })
+        ]);
+    } catch (\Exception $e) {
+        return response()->json([
+            'success' => false,
+            'error' => $e->getMessage()
+        ]);
+    }
+});
