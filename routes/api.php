@@ -170,16 +170,25 @@ Route::get('/debug/seed-data', function () {
         DB::beginTransaction();
 
         // Insert game_types (must exist before games)
-        $gameType = \App\Models\GameType::firstOrCreate(
-            ['id' => 1],
-            ['name' => 'PS5']
-        );
+        if (!\App\Models\GameType::find(1)) {
+            DB::table('game_types')->insert([
+                'id' => 1,
+                'name' => 'PS5',
+                'created_at' => now(),
+                'updated_at' => now()
+            ]);
+        }
 
         // Insert pricing_modes (must exist before game_pricings)
-        $pricingMode = \App\Models\PricingMode::firstOrCreate(
-            ['id' => 1],
-            ['code' => 'standard', 'label' => 'Standard']
-        );
+        if (!\App\Models\PricingMode::find(1)) {
+            DB::table('pricing_modes')->insert([
+                'id' => 1,
+                'code' => 'standard',
+                'label' => 'Standard',
+                'created_at' => now(),
+                'updated_at' => now()
+            ]);
+        }
 
         // Insert machines
         $machines = [
