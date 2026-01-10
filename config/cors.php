@@ -12,8 +12,14 @@ return [
 
     'allowed_methods' => ['*'],
 
-   'allowed_origins' => ['http://localhost:3000', 'http://localhost:5173', 'http://localhost:8080', 'http://127.0.0.1:3000', 'http://127.0.0.1:5173', 'http://127.0.0.1:8080', 'http://192.168.2.108:3000', 'http://192.168.2.108:5173', 'http://192.168.2.108:8080'],
-    'allowed_origins_patterns' => [],
+    'allowed_origins' => array_filter(array_merge(
+        explode(',', env('FRONTEND_URL', 'http://localhost:5173')),
+        ['http://localhost:5173', 'http://localhost:5174']
+    )),
+
+    'allowed_origins_patterns' => [
+        '/https:\/\/.*\.vercel\.app$/',  // Tous les domaines Vercel
+    ],
 
     'allowed_headers' => ['*'],
 
