@@ -230,7 +230,16 @@ Route::get('/debug/seed-data', function () {
         ];
 
         foreach ($games as $game) {
-            \App\Models\Game::updateOrCreate(['id' => $game['id']], $game);
+            if (!\App\Models\Game::find($game['id'])) {
+                DB::table('games')->insert([
+                    'id' => $game['id'],
+                    'game_type_id' => $game['game_type_id'],
+                    'name' => $game['name'],
+                    'active' => $game['active'],
+                    'created_at' => now(),
+                    'updated_at' => now()
+                ]);
+            }
         }
 
         // Insert game pricings
