@@ -169,11 +169,17 @@ Route::get('/debug/seed-data', function () {
     try {
         DB::beginTransaction();
 
-        // Insert game_types
-        \App\Models\GameType::updateOrCreate(['id' => 1], ['name' => 'PS5']);
+        // Insert game_types (must exist before games)
+        $gameType = \App\Models\GameType::firstOrCreate(
+            ['id' => 1],
+            ['name' => 'PS5']
+        );
 
-        // Insert pricing_modes
-        \App\Models\PricingMode::updateOrCreate(['id' => 1], ['code' => 'standard', 'label' => 'Standard']);
+        // Insert pricing_modes (must exist before game_pricings)
+        $pricingMode = \App\Models\PricingMode::firstOrCreate(
+            ['id' => 1],
+            ['code' => 'standard', 'label' => 'Standard']
+        );
 
         // Insert machines
         $machines = [
