@@ -105,3 +105,12 @@ Route::get('/test-machine-data', function () {
 
     return response()->json($result, 200, [], JSON_PRETTY_PRINT);
 });
+// Health check route
+Route::get('/health', function () {
+    return response()->json([
+        'status' => 'ok',
+        'message' => 'ZStation API is running',
+        'timestamp' => now(),
+        'database' => DB::connection()->getDatabaseName()
+    ]);
+});
