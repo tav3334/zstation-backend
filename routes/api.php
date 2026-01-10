@@ -361,3 +361,43 @@ Route::get('/debug/seed-data', function () {
         ]);
     }
 });
+
+// Temporary route to update user passwords with proper hashing
+Route::get('/debug/update-passwords', function () {
+    try {
+        DB::beginTransaction();
+
+        // Update admin password
+        DB::table('users')
+            ->where('email', 'Ziad@zstation.ma')
+            ->update([
+                'password' => Hash::make('essaifi2026'),
+                'updated_at' => now()
+            ]);
+
+        // Update agent password
+        DB::table('users')
+            ->where('email', 'Walid@zsattion.ma')
+            ->update([
+                'password' => Hash::make('zstation2026'),
+                'updated_at' => now()
+            ]);
+
+        DB::commit();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Passwords updated successfully with bcrypt hashing',
+            'users' => [
+                ['email' => 'Ziad@zstation.ma', 'password' => 'essaifi2026', 'role' => 'admin'],
+                ['email' => 'Walid@zsattion.ma', 'password' => 'zstation2026', 'role' => 'agent']
+            ]
+        ]);
+    } catch (\Exception $e) {
+        DB::rollBack();
+        return response()->json([
+            'success' => false,
+            'error' => $e->getMessage()
+        ]);
+    }
+});
