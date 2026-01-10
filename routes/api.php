@@ -169,6 +169,12 @@ Route::get('/debug/seed-data', function () {
     try {
         DB::beginTransaction();
 
+        // Insert game_types
+        \App\Models\GameType::updateOrCreate(['id' => 1], ['name' => 'PS5']);
+
+        // Insert pricing_modes
+        \App\Models\PricingMode::updateOrCreate(['id' => 1], ['name' => '', 'description' => '']);
+
         // Insert machines
         $machines = [
             ['id' => 1, 'name' => 'PS5 - Station 1', 'status' => 'available'],
@@ -200,10 +206,12 @@ Route::get('/debug/seed-data', function () {
 
         // Insert games
         $games = [
-            ['id' => 1, 'name' => 'FIFA 24', 'icon' => '⚽'],
-            ['id' => 2, 'name' => 'Call of Duty', 'icon' => '🎮'],
-            ['id' => 3, 'name' => 'Fortnite', 'icon' => '🎯'],
-            ['id' => 4, 'name' => 'GTA V', 'icon' => '🚗'],
+            ['id' => 1, 'game_type_id' => 1, 'name' => 'FIFA 24', 'active' => 1],
+            ['id' => 2, 'game_type_id' => 1, 'name' => 'Call of Duty', 'active' => 1],
+            ['id' => 3, 'game_type_id' => 1, 'name' => 'Fortnite', 'active' => 1],
+            ['id' => 4, 'game_type_id' => 1, 'name' => 'GTA V', 'active' => 1],
+            ['id' => 5, 'game_type_id' => 1, 'name' => 'Spider-Man', 'active' => 1],
+            ['id' => 6, 'game_type_id' => 1, 'name' => 'God of War', 'active' => 1],
         ];
 
         foreach ($games as $game) {
@@ -212,14 +220,36 @@ Route::get('/debug/seed-data', function () {
 
         // Insert game pricings
         $pricings = [
-            ['id' => 1, 'game_id' => 1, 'duration_minutes' => 60, 'price' => 10.00],
-            ['id' => 2, 'game_id' => 1, 'duration_minutes' => 120, 'price' => 18.00],
-            ['id' => 3, 'game_id' => 2, 'duration_minutes' => 60, 'price' => 10.00],
-            ['id' => 4, 'game_id' => 2, 'duration_minutes' => 120, 'price' => 18.00],
-            ['id' => 5, 'game_id' => 3, 'duration_minutes' => 60, 'price' => 10.00],
-            ['id' => 6, 'game_id' => 3, 'duration_minutes' => 120, 'price' => 18.00],
-            ['id' => 7, 'game_id' => 4, 'duration_minutes' => 60, 'price' => 10.00],
-            ['id' => 8, 'game_id' => 4, 'duration_minutes' => 120, 'price' => 18.00],
+            ['id' => 2, 'game_id' => 1, 'pricing_mode_id' => 1, 'duration_minutes' => 30, 'price' => 10.00],
+            ['id' => 3, 'game_id' => 1, 'pricing_mode_id' => 1, 'duration_minutes' => 60, 'price' => 20.00],
+            ['id' => 4, 'game_id' => 1, 'pricing_mode_id' => 1, 'duration_minutes' => 120, 'price' => 45.00],
+            ['id' => 5, 'game_id' => 1, 'pricing_mode_id' => 1, 'duration_minutes' => 180, 'price' => 60.00],
+            ['id' => 6, 'game_id' => 2, 'pricing_mode_id' => 1, 'duration_minutes' => 30, 'price' => 10.00],
+            ['id' => 7, 'game_id' => 2, 'pricing_mode_id' => 1, 'duration_minutes' => 60, 'price' => 20.00],
+            ['id' => 8, 'game_id' => 2, 'pricing_mode_id' => 1, 'duration_minutes' => 120, 'price' => 45.00],
+            ['id' => 9, 'game_id' => 2, 'pricing_mode_id' => 1, 'duration_minutes' => 180, 'price' => 60.00],
+            ['id' => 10, 'game_id' => 3, 'pricing_mode_id' => 1, 'duration_minutes' => 30, 'price' => 10.00],
+            ['id' => 11, 'game_id' => 3, 'pricing_mode_id' => 1, 'duration_minutes' => 60, 'price' => 20.00],
+            ['id' => 12, 'game_id' => 3, 'pricing_mode_id' => 1, 'duration_minutes' => 120, 'price' => 45.00],
+            ['id' => 13, 'game_id' => 3, 'pricing_mode_id' => 1, 'duration_minutes' => 180, 'price' => 60.00],
+            ['id' => 14, 'game_id' => 4, 'pricing_mode_id' => 1, 'duration_minutes' => 30, 'price' => 10.00],
+            ['id' => 15, 'game_id' => 4, 'pricing_mode_id' => 1, 'duration_minutes' => 60, 'price' => 20.00],
+            ['id' => 16, 'game_id' => 4, 'pricing_mode_id' => 1, 'duration_minutes' => 120, 'price' => 45.00],
+            ['id' => 17, 'game_id' => 4, 'pricing_mode_id' => 1, 'duration_minutes' => 180, 'price' => 60.00],
+            ['id' => 18, 'game_id' => 5, 'pricing_mode_id' => 1, 'duration_minutes' => 30, 'price' => 10.00],
+            ['id' => 19, 'game_id' => 5, 'pricing_mode_id' => 1, 'duration_minutes' => 60, 'price' => 20.00],
+            ['id' => 20, 'game_id' => 5, 'pricing_mode_id' => 1, 'duration_minutes' => 120, 'price' => 45.00],
+            ['id' => 21, 'game_id' => 5, 'pricing_mode_id' => 1, 'duration_minutes' => 180, 'price' => 60.00],
+            ['id' => 22, 'game_id' => 6, 'pricing_mode_id' => 1, 'duration_minutes' => 30, 'price' => 10.00],
+            ['id' => 23, 'game_id' => 6, 'pricing_mode_id' => 1, 'duration_minutes' => 60, 'price' => 20.00],
+            ['id' => 24, 'game_id' => 6, 'pricing_mode_id' => 1, 'duration_minutes' => 120, 'price' => 45.00],
+            ['id' => 25, 'game_id' => 6, 'pricing_mode_id' => 1, 'duration_minutes' => 180, 'price' => 60.00],
+            ['id' => 26, 'game_id' => 1, 'pricing_mode_id' => 1, 'duration_minutes' => 6, 'price' => 6.00],
+            ['id' => 27, 'game_id' => 2, 'pricing_mode_id' => 1, 'duration_minutes' => 6, 'price' => 6.00],
+            ['id' => 28, 'game_id' => 3, 'pricing_mode_id' => 1, 'duration_minutes' => 6, 'price' => 6.00],
+            ['id' => 29, 'game_id' => 4, 'pricing_mode_id' => 1, 'duration_minutes' => 6, 'price' => 6.00],
+            ['id' => 30, 'game_id' => 5, 'pricing_mode_id' => 1, 'duration_minutes' => 6, 'price' => 6.00],
+            ['id' => 31, 'game_id' => 6, 'pricing_mode_id' => 1, 'duration_minutes' => 6, 'price' => 6.00],
         ];
 
         foreach ($pricings as $pricing) {
@@ -232,6 +262,8 @@ Route::get('/debug/seed-data', function () {
             'success' => true,
             'message' => 'Demo data seeded successfully',
             'counts' => [
+                'game_types' => 1,
+                'pricing_modes' => 1,
                 'machines' => count($machines),
                 'products' => count($products),
                 'games' => count($games),
