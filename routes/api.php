@@ -8,6 +8,12 @@ use App\Http\Controllers\Api\GameSessionController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\Api\ProductController;
+use Illuminate\Http\Request;
+
+
+Route::get('/user', function (Request $request) {
+    return $request->user();
+})->middleware('auth:sanctum');
 
 // ========== AUTH (Public) ==========
 Route::post('/login', [AuthController::class, 'login']);
