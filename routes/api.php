@@ -173,7 +173,7 @@ Route::get('/debug/seed-data', function () {
         \App\Models\GameType::updateOrCreate(['id' => 1], ['name' => 'PS5']);
 
         // Insert pricing_modes
-        \App\Models\PricingMode::updateOrCreate(['id' => 1], ['name' => '', 'description' => '']);
+        \App\Models\PricingMode::updateOrCreate(['id' => 1], ['code' => 'standard', 'label' => 'Standard']);
 
         // Insert machines
         $machines = [
