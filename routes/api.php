@@ -164,6 +164,34 @@ Route::get('/debug/migrate', function () {
     }
 });
 
+// Temporary route to reset and seed demo data (REMOVE IN PRODUCTION!)
+Route::get('/debug/reset-data', function () {
+    try {
+        DB::beginTransaction();
+
+        // Delete all data
+        DB::table('game_pricings')->delete();
+        DB::table('games')->delete();
+        DB::table('products')->delete();
+        DB::table('machines')->delete();
+        DB::table('pricing_modes')->delete();
+        DB::table('game_types')->delete();
+
+        DB::commit();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'All data deleted successfully'
+        ]);
+    } catch (\Exception $e) {
+        DB::rollBack();
+        return response()->json([
+            'success' => false,
+            'error' => $e->getMessage()
+        ]);
+    }
+});
+
 // Temporary route to seed demo data (REMOVE IN PRODUCTION!)
 Route::get('/debug/seed-data', function () {
     try {
