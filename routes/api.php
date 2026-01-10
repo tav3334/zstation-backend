@@ -229,7 +229,15 @@ Route::get('/debug/seed-data', function () {
         ];
 
         foreach ($machines as $machine) {
-            \App\Models\Machine::updateOrCreate(['id' => $machine['id']], $machine);
+            if (!\App\Models\Machine::find($machine['id'])) {
+                DB::table('machines')->insert([
+                    'id' => $machine['id'],
+                    'name' => $machine['name'],
+                    'status' => $machine['status'],
+                    'created_at' => now(),
+                    'updated_at' => now()
+                ]);
+            }
         }
 
         // Insert products
@@ -244,7 +252,20 @@ Route::get('/debug/seed-data', function () {
         ];
 
         foreach ($products as $product) {
-            \App\Models\Product::updateOrCreate(['id' => $product['id']], $product);
+            if (!\App\Models\Product::find($product['id'])) {
+                DB::table('products')->insert([
+                    'id' => $product['id'],
+                    'name' => $product['name'],
+                    'category' => $product['category'],
+                    'price' => $product['price'],
+                    'size' => $product['size'],
+                    'stock' => $product['stock'],
+                    'available' => $product['available'],
+                    'icon' => $product['icon'],
+                    'created_at' => now(),
+                    'updated_at' => now()
+                ]);
+            }
         }
 
         // Insert games
@@ -305,7 +326,17 @@ Route::get('/debug/seed-data', function () {
         ];
 
         foreach ($pricings as $pricing) {
-            \App\Models\GamePricing::updateOrCreate(['id' => $pricing['id']], $pricing);
+            if (!\App\Models\GamePricing::find($pricing['id'])) {
+                DB::table('game_pricings')->insert([
+                    'id' => $pricing['id'],
+                    'game_id' => $pricing['game_id'],
+                    'pricing_mode_id' => $pricing['pricing_mode_id'],
+                    'duration_minutes' => $pricing['duration_minutes'],
+                    'price' => $pricing['price'],
+                    'created_at' => now(),
+                    'updated_at' => now()
+                ]);
+            }
         }
 
         DB::commit();
