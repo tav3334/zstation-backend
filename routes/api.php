@@ -242,13 +242,13 @@ Route::get('/debug/seed-data', function () {
 
         // Insert products
         $products = [
-            ['id' => 1, 'name' => 'Popcorn', 'category' => 'snack', 'price' => 3.00, 'size' => 'petit', 'stock' => 98, 'available' => 1, 'icon' => '🍿'],
-            ['id' => 2, 'name' => 'Popcorn', 'category' => 'snack', 'price' => 5.00, 'size' => 'grand', 'stock' => 78, 'available' => 1, 'icon' => '🍿'],
-            ['id' => 3, 'name' => 'Coca-Cola', 'category' => 'drink', 'price' => 5.00, 'size' => 'petit', 'stock' => 50, 'available' => 1, 'icon' => '🥤'],
-            ['id' => 4, 'name' => 'Coca-Cola', 'category' => 'drink', 'price' => 7.00, 'size' => 'grand', 'stock' => 50, 'available' => 1, 'icon' => '🥤'],
-            ['id' => 5, 'name' => 'Sprite', 'category' => 'drink', 'price' => 5.00, 'size' => 'petit', 'stock' => 49, 'available' => 1, 'icon' => '🥤'],
-            ['id' => 7, 'name' => 'Eau minérale', 'category' => 'drink', 'price' => 3.00, 'size' => null, 'stock' => 100, 'available' => 1, 'icon' => '💧'],
-            ['id' => 8, 'name' => 'Cafe', 'category' => 'drink', 'price' => 6.00, 'size' => null, 'stock' => 0, 'available' => 1, 'icon' => '☕'],
+            ['id' => 1, 'name' => 'Popcorn', 'category' => 'snack', 'price' => 3.00, 'size' => 'petit', 'stock' => 98, 'is_available' => 1, 'image' => '🍿'],
+            ['id' => 2, 'name' => 'Popcorn', 'category' => 'snack', 'price' => 5.00, 'size' => 'grand', 'stock' => 78, 'is_available' => 1, 'image' => '🍿'],
+            ['id' => 3, 'name' => 'Coca-Cola', 'category' => 'drink', 'price' => 5.00, 'size' => 'petit', 'stock' => 50, 'is_available' => 1, 'image' => '🥤'],
+            ['id' => 4, 'name' => 'Coca-Cola', 'category' => 'drink', 'price' => 7.00, 'size' => 'grand', 'stock' => 50, 'is_available' => 1, 'image' => '🥤'],
+            ['id' => 5, 'name' => 'Sprite', 'category' => 'drink', 'price' => 5.00, 'size' => 'petit', 'stock' => 49, 'is_available' => 1, 'image' => '🥤'],
+            ['id' => 7, 'name' => 'Eau minérale', 'category' => 'drink', 'price' => 3.00, 'size' => null, 'stock' => 100, 'is_available' => 1, 'image' => '💧'],
+            ['id' => 8, 'name' => 'Cafe', 'category' => 'drink', 'price' => 6.00, 'size' => null, 'stock' => 0, 'is_available' => 1, 'image' => '☕'],
         ];
 
         foreach ($products as $product) {
@@ -260,8 +260,8 @@ Route::get('/debug/seed-data', function () {
                     'price' => $product['price'],
                     'size' => $product['size'],
                     'stock' => $product['stock'],
-                    'available' => $product['available'],
-                    'icon' => $product['icon'],
+                    'is_available' => $product['is_available'],
+                    'image' => $product['image'],
                     'created_at' => now(),
                     'updated_at' => now()
                 ]);
