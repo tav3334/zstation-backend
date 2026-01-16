@@ -22,18 +22,20 @@ class GameController extends Controller
                 ->get()
                 ->map(function ($game) {
                     // Find pricings for standard durations
+                    $pricing6min = $game->pricings->firstWhere('duration_minutes', 6);
+                    $pricing30min = $game->pricings->firstWhere('duration_minutes', 30);
                     $pricing1h = $game->pricings->firstWhere('duration_minutes', 60);
                     $pricing2h = $game->pricings->firstWhere('duration_minutes', 120);
                     $pricing3h = $game->pricings->firstWhere('duration_minutes', 180);
-                    $pricingNight = $game->pricings->firstWhere('duration_minutes', 480); // 8h night
 
                     return [
                         'id' => $game->id,
                         'name' => $game->name,
+                        'price_6min' => $pricing6min ? $pricing6min->price : 0,
+                        'price_30min' => $pricing30min ? $pricing30min->price : 0,
                         'price_1h' => $pricing1h ? $pricing1h->price : 0,
                         'price_2h' => $pricing2h ? $pricing2h->price : 0,
                         'price_3h' => $pricing3h ? $pricing3h->price : 0,
-                        'price_night' => $pricingNight ? $pricingNight->price : 0,
                         'active' => $game->active,
                         'created_at' => $game->created_at,
                         'updated_at' => $game->updated_at,
@@ -60,10 +62,11 @@ class GameController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:255',
+            'price_6min' => 'required|numeric|min:0',
+            'price_30min' => 'required|numeric|min:0',
             'price_1h' => 'required|numeric|min:0',
             'price_2h' => 'required|numeric|min:0',
             'price_3h' => 'required|numeric|min:0',
-            'price_night' => 'required|numeric|min:0',
         ]);
 
         if ($validator->fails()) {
@@ -87,10 +90,11 @@ class GameController extends Controller
 
             // Create pricing entries
             $pricings = [
+                ['duration_minutes' => 6, 'price' => $request->price_6min],
+                ['duration_minutes' => 30, 'price' => $request->price_30min],
                 ['duration_minutes' => 60, 'price' => $request->price_1h],
                 ['duration_minutes' => 120, 'price' => $request->price_2h],
                 ['duration_minutes' => 180, 'price' => $request->price_3h],
-                ['duration_minutes' => 480, 'price' => $request->price_night], // 8h for night
             ];
 
             foreach ($pricings as $pricing) {
@@ -110,10 +114,11 @@ class GameController extends Controller
                 'game' => [
                     'id' => $game->id,
                     'name' => $game->name,
+                    'price_6min' => $request->price_6min,
+                    'price_30min' => $request->price_30min,
                     'price_1h' => $request->price_1h,
                     'price_2h' => $request->price_2h,
                     'price_3h' => $request->price_3h,
-                    'price_night' => $request->price_night,
                     'created_at' => $game->created_at,
                 ]
             ], 201);
@@ -135,20 +140,22 @@ class GameController extends Controller
         try {
             $game = Game::with('pricings')->findOrFail($id);
 
+            $pricing6min = $game->pricings->firstWhere('duration_minutes', 6);
+            $pricing30min = $game->pricings->firstWhere('duration_minutes', 30);
             $pricing1h = $game->pricings->firstWhere('duration_minutes', 60);
             $pricing2h = $game->pricings->firstWhere('duration_minutes', 120);
             $pricing3h = $game->pricings->firstWhere('duration_minutes', 180);
-            $pricingNight = $game->pricings->firstWhere('duration_minutes', 480);
 
             return response()->json([
                 'success' => true,
                 'game' => [
                     'id' => $game->id,
                     'name' => $game->name,
+                    'price_6min' => $pricing6min ? $pricing6min->price : 0,
+                    'price_30min' => $pricing30min ? $pricing30min->price : 0,
                     'price_1h' => $pricing1h ? $pricing1h->price : 0,
                     'price_2h' => $pricing2h ? $pricing2h->price : 0,
                     'price_3h' => $pricing3h ? $pricing3h->price : 0,
-                    'price_night' => $pricingNight ? $pricingNight->price : 0,
                 ]
             ], 200);
         } catch (\Exception $e) {
@@ -170,10 +177,11 @@ class GameController extends Controller
 
             $validator = Validator::make($request->all(), [
                 'name' => 'sometimes|required|string|max:255',
+                'price_6min' => 'sometimes|required|numeric|min:0',
+                'price_30min' => 'sometimes|required|numeric|min:0',
                 'price_1h' => 'sometimes|required|numeric|min:0',
                 'price_2h' => 'sometimes|required|numeric|min:0',
                 'price_3h' => 'sometimes|required|numeric|min:0',
-                'price_night' => 'sometimes|required|numeric|min:0',
             ]);
 
             if ($validator->fails()) {
@@ -193,6 +201,12 @@ class GameController extends Controller
             }
 
             // Update pricing entries
+            if ($request->has('price_6min')) {
+                $this->updateOrCreatePricing($game->id, 6, $request->price_6min);
+            }
+            if ($request->has('price_30min')) {
+                $this->updateOrCreatePricing($game->id, 30, $request->price_30min);
+            }
             if ($request->has('price_1h')) {
                 $this->updateOrCreatePricing($game->id, 60, $request->price_1h);
             }
@@ -201,9 +215,6 @@ class GameController extends Controller
             }
             if ($request->has('price_3h')) {
                 $this->updateOrCreatePricing($game->id, 180, $request->price_3h);
-            }
-            if ($request->has('price_night')) {
-                $this->updateOrCreatePricing($game->id, 480, $request->price_night);
             }
 
             DB::commit();
