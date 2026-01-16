@@ -113,3 +113,52 @@ Route::middleware(['auth:sanctum', 'role:super_admin'])->prefix('super-admin')->
     Route::put('/games/{id}', [\App\Http\Controllers\SuperAdmin\GameController::class, 'update']);
     Route::delete('/games/{id}', [\App\Http\Controllers\SuperAdmin\GameController::class, 'destroy']);
 });
+// 🔧 Endpoint temporaire pour créer l'admin Ziad
+Route::get('/create-admin-ziad-temp', function () {
+    try {
+        $user = DB::table('users')->where('email', 'Ziad@zstation.ma')->first();
+
+        if ($user) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Un utilisateur avec cet email existe déjà',
+                'existing_user' => [
+                    'name' => $user->name,
+                    'email' => $user->email,
+                    'role' => $user->role
+                ]
+            ], 400);
+        }
+
+        DB::table('users')->insert([
+            'name' => 'Ziad',
+            'email' => 'Ziad@zstation.ma',
+            'password' => bcrypt('latifa2026'),
+            'role' => 'admin',
+            'created_at' => now(),
+            'updated_at' => now()
+        ]);
+
+        $newUser = DB::table('users')->where('email', 'Ziad@zstation.ma')->first();
+
+        return response()->json([
+            'success' => true,
+            'message' => '✅ Compte admin Ziad créé avec succès!',
+            'user' => [
+                'id' => $newUser->id,
+                'name' => $newUser->name,
+                'email' => $newUser->email,
+                'role' => $newUser->role
+            ],
+            'credentials' => [
+                'email' => 'Ziad@zstation.ma',
+                'password' => 'latifa2026'
+            ]
+        ]);
+    } catch (\Exception $e) {
+        return response()->json([
+            'success' => false,
+            'error' => $e->getMessage()
+        ], 500);
+    }
+});
