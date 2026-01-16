@@ -87,3 +87,29 @@ Route::get('/health', function () {
         'timestamp' => now()
     ]);
 });
+
+
+// ========== ROUTES SUPER ADMIN UNIQUEMENT ==========
+Route::middleware(['auth:sanctum', 'role:super_admin'])->prefix('super-admin')->group(function () {
+
+    // Gestion des Utilisateurs
+    Route::get('/users', [\App\Http\Controllers\SuperAdmin\UserController::class, 'index']);
+    Route::post('/users', [\App\Http\Controllers\SuperAdmin\UserController::class, 'store']);
+    Route::get('/users/{id}', [\App\Http\Controllers\SuperAdmin\UserController::class, 'show']);
+    Route::put('/users/{id}', [\App\Http\Controllers\SuperAdmin\UserController::class, 'update']);
+    Route::delete('/users/{id}', [\App\Http\Controllers\SuperAdmin\UserController::class, 'destroy']);
+
+    // Gestion des Machines
+    Route::get('/machines', [\App\Http\Controllers\SuperAdmin\MachineController::class, 'index']);
+    Route::post('/machines', [\App\Http\Controllers\SuperAdmin\MachineController::class, 'store']);
+    Route::get('/machines/{id}', [\App\Http\Controllers\SuperAdmin\MachineController::class, 'show']);
+    Route::put('/machines/{id}', [\App\Http\Controllers\SuperAdmin\MachineController::class, 'update']);
+    Route::delete('/machines/{id}', [\App\Http\Controllers\SuperAdmin\MachineController::class, 'destroy']);
+
+    // Gestion des Jeux
+    Route::get('/games', [\App\Http\Controllers\SuperAdmin\GameController::class, 'index']);
+    Route::post('/games', [\App\Http\Controllers\SuperAdmin\GameController::class, 'store']);
+    Route::get('/games/{id}', [\App\Http\Controllers\SuperAdmin\GameController::class, 'show']);
+    Route::put('/games/{id}', [\App\Http\Controllers\SuperAdmin\GameController::class, 'update']);
+    Route::delete('/games/{id}', [\App\Http\Controllers\SuperAdmin\GameController::class, 'destroy']);
+});
