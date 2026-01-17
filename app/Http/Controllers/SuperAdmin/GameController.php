@@ -12,31 +12,32 @@ use Illuminate\Support\Facades\DB;
 class GameController extends Controller
 {
     /**
-     * Display a listing of all games with pricing
+     * Display a listing of all games with pricing (both time-based and match-based)
      */
     public function index()
     {
         try {
-            $games = Game::with('pricings')
+            $games = Game::with(['pricings.pricingMode'])
                 ->orderBy('created_at', 'desc')
                 ->get()
                 ->map(function ($game) {
-                    // Find pricings for standard durations
-                    $pricing6min = $game->pricings->firstWhere('duration_minutes', 6);
-                    $pricing30min = $game->pricings->firstWhere('duration_minutes', 30);
-                    $pricing1h = $game->pricings->firstWhere('duration_minutes', 60);
-                    $pricing2h = $game->pricings->firstWhere('duration_minutes', 120);
-                    $pricing3h = $game->pricings->firstWhere('duration_minutes', 180);
-
                     return [
                         'id' => $game->id,
                         'name' => $game->name,
-                        'price_6min' => $pricing6min ? $pricing6min->price : 0,
-                        'price_30min' => $pricing30min ? $pricing30min->price : 0,
-                        'price_1h' => $pricing1h ? $pricing1h->price : 0,
-                        'price_2h' => $pricing2h ? $pricing2h->price : 0,
-                        'price_3h' => $pricing3h ? $pricing3h->price : 0,
                         'active' => $game->active,
+                        'pricings' => $game->pricings->map(function ($pricing) {
+                            return [
+                                'id' => $pricing->id,
+                                'pricing_mode' => [
+                                    'id' => $pricing->pricingMode->id ?? null,
+                                    'code' => $pricing->pricingMode->code ?? 'fixed',
+                                    'label' => $pricing->pricingMode->label ?? 'Prix Fixe',
+                                ],
+                                'duration_minutes' => $pricing->duration_minutes,
+                                'matches_count' => $pricing->matches_count,
+                                'price' => $pricing->price,
+                            ];
+                        }),
                         'created_at' => $game->created_at,
                         'updated_at' => $game->updated_at,
                     ];
@@ -285,5 +286,119 @@ class GameController extends Controller
                 'pricing_mode_id' => 1
             ]
         );
+    }
+
+    /**
+     * Add a new pricing to a game (time-based or match-based)
+     */
+    public function addPricing(Request $request, $gameId)
+    {
+        $validator = Validator::make($request->all(), [
+            'pricing_mode_id' => 'required|integer|exists:pricing_modes,id',
+            'price' => 'required|numeric|min:0',
+            'duration_minutes' => 'required_if:pricing_mode_id,1|nullable|integer|min:1',
+            'matches_count' => 'required_if:pricing_mode_id,5|nullable|integer|min:1',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Erreur de validation',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        try {
+            $game = Game::findOrFail($gameId);
+
+            $pricing = GamePricing::create([
+                'game_id' => $gameId,
+                'pricing_mode_id' => $request->pricing_mode_id,
+                'duration_minutes' => $request->duration_minutes,
+                'matches_count' => $request->matches_count,
+                'price' => $request->price,
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Tarif ajouté avec succès',
+                'pricing' => $pricing
+            ], 201);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Erreur lors de l\'ajout du tarif',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Update a specific pricing
+     */
+    public function updatePricing(Request $request, $gameId, $pricingId)
+    {
+        $validator = Validator::make($request->all(), [
+            'price' => 'required|numeric|min:0',
+            'duration_minutes' => 'nullable|integer|min:1',
+            'matches_count' => 'nullable|integer|min:1',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Erreur de validation',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        try {
+            $pricing = GamePricing::where('game_id', $gameId)
+                ->where('id', $pricingId)
+                ->firstOrFail();
+
+            $pricing->update([
+                'price' => $request->price,
+                'duration_minutes' => $request->duration_minutes,
+                'matches_count' => $request->matches_count,
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Tarif modifié avec succès',
+                'pricing' => $pricing
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Erreur lors de la modification du tarif',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Delete a specific pricing
+     */
+    public function deletePricing($gameId, $pricingId)
+    {
+        try {
+            $pricing = GamePricing::where('game_id', $gameId)
+                ->where('id', $pricingId)
+                ->firstOrFail();
+
+            $pricing->delete();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Tarif supprimé avec succès'
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Erreur lors de la suppression du tarif',
+                'error' => $e->getMessage()
+            ], 500);
+        }
     }
 }

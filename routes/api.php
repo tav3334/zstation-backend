@@ -150,6 +150,19 @@ Route::middleware(['auth:sanctum', 'role:super_admin'])->prefix('super-admin')->
     Route::get('/games/{id}', [\App\Http\Controllers\SuperAdmin\GameController::class, 'show']);
     Route::put('/games/{id}', [\App\Http\Controllers\SuperAdmin\GameController::class, 'update']);
     Route::delete('/games/{id}', [\App\Http\Controllers\SuperAdmin\GameController::class, 'destroy']);
+
+    // Gestion des Tarifs
+    Route::post('/games/{id}/pricings', [\App\Http\Controllers\SuperAdmin\GameController::class, 'addPricing']);
+    Route::put('/games/{gameId}/pricings/{pricingId}', [\App\Http\Controllers\SuperAdmin\GameController::class, 'updatePricing']);
+    Route::delete('/games/{gameId}/pricings/{pricingId}', [\App\Http\Controllers\SuperAdmin\GameController::class, 'deletePricing']);
+
+    // Récupérer les modes de tarification disponibles
+    Route::get('/pricing-modes', function () {
+        return response()->json([
+            'success' => true,
+            'pricing_modes' => \App\Models\PricingMode::all()
+        ]);
+    });
 });
 // 🔧 Endpoint temporaire pour créer l'admin Ziad
 Route::get('/create-admin-ziad-temp', function () {
