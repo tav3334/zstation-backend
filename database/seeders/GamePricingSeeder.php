@@ -13,7 +13,10 @@ class GamePricingSeeder extends Seeder
     public function run(): void
     {
         // Créer les données de base d'abord
-        \DB::table('pricing_modes')->insertOrIgnore(['id' => 1, 'created_at' => now(), 'updated_at' => now()]);
+        \DB::table('pricing_modes')->updateOrInsert(
+            ['id' => 1],
+            ['code' => 'fixed', 'label' => 'Prix Fixe', 'created_at' => now(), 'updated_at' => now()]
+        );
         \DB::table('game_types')->insertOrIgnore(['id' => 1, 'created_at' => now(), 'updated_at' => now()]);
 
         // Créer les jeux populaires

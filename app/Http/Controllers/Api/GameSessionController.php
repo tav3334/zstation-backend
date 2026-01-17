@@ -36,6 +36,8 @@ class GameSessionController extends Controller
             ], 409);
         }
 
+        $gamePricing = GamePricing::with('pricingMode')->findOrFail($request->game_pricing_id);
+
         // ✅ IMPORTANT: start_time doit TOUJOURS être now()
         $startTime = now();
 
@@ -44,7 +46,7 @@ class GameSessionController extends Controller
             'machine_id' => $machine->id,
             'game_id' => $request->game_id,
             'pricing_reference_id' => $request->game_pricing_id,
-            'pricing_mode_id' => 1,
+            'pricing_mode_id' => $gamePricing->pricing_mode_id,
             'customer_id' => null,
             'start_time' => $startTime,
             'status' => 'active'
@@ -53,17 +55,24 @@ class GameSessionController extends Controller
         // ✅ Mettre à jour le statut de la machine
         $machine->update(['status' => 'in_session']);
 
-        return response()->json([
+        $response = [
             'message' => 'Session started',
-            'session' => $session->load(['game', 'gamePricing']),
+            'session' => $session->load(['game', 'gamePricing.pricingMode']),
             'start_time' => $startTime->toISOString(),
-            'will_auto_stop_at' => $startTime->addMinutes($session->gamePricing->duration_minutes)->toISOString()
-        ], 201);
+            'pricing_mode' => $gamePricing->pricingMode->code
+        ];
+
+        // Ajouter will_auto_stop_at seulement pour les modes basés sur le temps
+        if ($gamePricing->duration_minutes !== null) {
+            $response['will_auto_stop_at'] = $startTime->addMinutes($gamePricing->duration_minutes)->toISOString();
+        }
+
+        return response()->json($response, 201);
     }
 
-    public function stop($id)
+    public function stop(Request $request, $id)
     {
-        $session = GameSession::with(['gamePricing', 'machine', 'game'])->findOrFail($id);
+        $session = GameSession::with(['gamePricing.pricingMode', 'machine', 'game'])->findOrFail($id);
 
         if ($session->ended_at) {
             return response()->json([
@@ -71,27 +80,56 @@ class GameSessionController extends Controller
             ], 409);
         }
 
+        $pricingMode = $session->gamePricing->pricingMode->code;
+
+        // Pour le mode "par match", le nombre de matchs est requis
+        if ($pricingMode === 'per_match') {
+            $request->validate([
+                'matches_played' => 'required|integer|min:1'
+            ]);
+        }
+
         // ⏱️ Calculer la durée réelle
         $session->ended_at = now();
         $durationMinutes = now()->diffInMinutes($session->start_time);
 
-        // 💰 TARIF FORFAITAIRE (prix complet)
-        $session->computed_price = $session->gamePricing->price;
+        // 💰 CALCUL DU PRIX selon le mode
+        if ($pricingMode === 'per_match') {
+            // Mode par match: prix par match × nombre de matchs
+            $matchesPlayed = $request->matches_played;
+            $pricePerMatch = $session->gamePricing->price;
+            $session->matches_played = $matchesPlayed;
+            $session->computed_price = $pricePerMatch * $matchesPlayed;
+        } else {
+            // Mode forfaitaire (temps): prix complet
+            $session->computed_price = $session->gamePricing->price;
+        }
+
         $session->status = 'completed';
         $session->save();
 
         // ✅ Libérer la machine
         $session->machine->update(['status' => 'available']);
 
-        return response()->json([
+        $response = [
             'message' => 'Session stopped successfully',
-            'session' => $session->load(['machine', 'game', 'gamePricing']),
+            'session' => $session->load(['machine', 'game', 'gamePricing.pricingMode']),
             'price' => $session->computed_price,
             'duration_used' => $durationMinutes . ' min',
-            'duration_paid' => $session->gamePricing->duration_minutes . ' min',
-            'forfait' => $session->gamePricing->duration_minutes . ' min = ' . $session->gamePricing->price . ' DH',
-            'payment_ready' => true // Indique que le paiement peut être enregistré
-        ]);
+            'payment_ready' => true
+        ];
+
+        // Informations spécifiques au mode
+        if ($pricingMode === 'per_match') {
+            $response['matches_played'] = $session->matches_played;
+            $response['price_per_match'] = $session->gamePricing->price . ' DH';
+            $response['calculation'] = $session->matches_played . ' match(s) × ' . $session->gamePricing->price . ' DH = ' . $session->computed_price . ' DH';
+        } else {
+            $response['duration_paid'] = $session->gamePricing->duration_minutes . ' min';
+            $response['forfait'] = $session->gamePricing->duration_minutes . ' min = ' . $session->gamePricing->price . ' DH';
+        }
+
+        return response()->json($response);
     }
 
     // 🔄 PROLONGATION
@@ -143,35 +181,49 @@ class GameSessionController extends Controller
     {
         $sessions = GameSession::whereNull('ended_at')
             ->where('status', 'active')
-            ->with('gamePricing', 'machine')
+            ->with('gamePricing.pricingMode', 'machine')
             ->get();
 
         $stoppedSessions = [];
         $debugInfo = [];
 
         foreach ($sessions as $session) {
-            $durationSeconds = $session->gamePricing->duration_minutes * 60;
-            $elapsed = now()->diffInSeconds($session->start_time);
+            $pricingMode = $session->gamePricing->pricingMode->code;
 
-            // Debug info
-            $debugInfo[] = [
-                'session_id' => $session->id,
-                'machine' => $session->machine->name,
-                'start_time' => $session->start_time->toDateTimeString(),
-                'elapsed_seconds' => $elapsed,
-                'duration_seconds' => $durationSeconds,
-                'should_stop' => $elapsed >= $durationSeconds
-            ];
+            // Auto-stop seulement pour les sessions basées sur le temps
+            if ($pricingMode === 'fixed' && $session->gamePricing->duration_minutes !== null) {
+                $durationSeconds = $session->gamePricing->duration_minutes * 60;
+                $elapsed = now()->diffInSeconds($session->start_time);
 
-            // Si le temps est écoulé, arrêter automatiquement
-            if ($elapsed >= $durationSeconds) {
-                $this->stopSessionInternal($session);
-                $stoppedSessions[] = [
+                // Debug info
+                $debugInfo[] = [
                     'session_id' => $session->id,
                     'machine' => $session->machine->name,
-                    'duration' => $session->gamePricing->duration_minutes . ' min',
-                    'price' => $session->computed_price . ' DH',
-                    'elapsed' => round($elapsed / 60, 1) . ' min'
+                    'pricing_mode' => $pricingMode,
+                    'start_time' => $session->start_time->toDateTimeString(),
+                    'elapsed_seconds' => $elapsed,
+                    'duration_seconds' => $durationSeconds,
+                    'should_stop' => $elapsed >= $durationSeconds
+                ];
+
+                // Si le temps est écoulé, arrêter automatiquement
+                if ($elapsed >= $durationSeconds) {
+                    $this->stopSessionInternal($session);
+                    $stoppedSessions[] = [
+                        'session_id' => $session->id,
+                        'machine' => $session->machine->name,
+                        'duration' => $session->gamePricing->duration_minutes . ' min',
+                        'price' => $session->computed_price . ' DH',
+                        'elapsed' => round($elapsed / 60, 1) . ' min'
+                    ];
+                }
+            } else {
+                // Sessions par match ne s'arrêtent pas automatiquement
+                $debugInfo[] = [
+                    'session_id' => $session->id,
+                    'machine' => $session->machine->name,
+                    'pricing_mode' => $pricingMode,
+                    'note' => 'Manual stop required (per-match pricing)'
                 ];
             }
         }
@@ -188,7 +240,7 @@ class GameSessionController extends Controller
     // 📊 Statut de session (temps restant)
     public function status($id)
     {
-        $session = GameSession::with(['gamePricing', 'machine'])->findOrFail($id);
+        $session = GameSession::with(['gamePricing.pricingMode', 'machine'])->findOrFail($id);
 
         if ($session->ended_at) {
             return response()->json([
@@ -197,23 +249,38 @@ class GameSessionController extends Controller
             ]);
         }
 
+        $pricingMode = $session->gamePricing->pricingMode->code;
         $elapsedSeconds = now()->diffInSeconds($session->start_time);
-        $totalSeconds = $session->gamePricing->duration_minutes * 60;
-        $remainingSeconds = max(0, $totalSeconds - $elapsedSeconds);
-
         $elapsedMinutes = floor($elapsedSeconds / 60);
-        $remainingMinutes = floor($remainingSeconds / 60);
 
-        return response()->json([
+        $response = [
             'status' => 'active',
+            'pricing_mode' => $pricingMode,
             'elapsed_seconds' => $elapsedSeconds,
             'elapsed_minutes' => $elapsedMinutes,
-            'remaining_seconds' => $remainingSeconds,
-            'remaining_minutes' => $remainingMinutes,
-            'will_auto_stop' => $remainingSeconds <= 0,
-            'forfait' => $session->gamePricing->duration_minutes . ' min = ' . $session->gamePricing->price . ' DH',
             'machine' => $session->machine->name
-        ]);
+        ];
+
+        // Pour le mode par temps, calculer le temps restant
+        if ($pricingMode === 'fixed' && $session->gamePricing->duration_minutes !== null) {
+            $totalSeconds = $session->gamePricing->duration_minutes * 60;
+            $remainingSeconds = max(0, $totalSeconds - $elapsedSeconds);
+            $remainingMinutes = floor($remainingSeconds / 60);
+
+            $response['remaining_seconds'] = $remainingSeconds;
+            $response['remaining_minutes'] = $remainingMinutes;
+            $response['will_auto_stop'] = $remainingSeconds <= 0;
+            $response['forfait'] = $session->gamePricing->duration_minutes . ' min = ' . $session->gamePricing->price . ' DH';
+        }
+
+        // Pour le mode par match
+        if ($pricingMode === 'per_match') {
+            $response['price_per_match'] = $session->gamePricing->price . ' DH';
+            $response['matches_count'] = $session->gamePricing->matches_count;
+            $response['message'] = 'Saisir le nombre de matchs joués à la fin';
+        }
+
+        return response()->json($response);
     }
 
     private function stopSessionInternal(GameSession $session)

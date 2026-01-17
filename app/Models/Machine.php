@@ -34,19 +34,23 @@ class Machine extends Model
     // ✅ Attribut virtuel pour le frontend
     public function getActiveSessionAttribute()
     {
-        $session = $this->activeSession()->with('game', 'gamePricing')->first();
+        $session = $this->activeSession()->with('game', 'gamePricing.pricingMode')->first();
 
         if (!$session) {
             return null;
         }
+
+        $pricingMode = $session->gamePricing->pricingMode->code ?? 'fixed';
 
         return [
             'id' => $session->id,
             'start_time' => $session->start_time->toISOString(),
             'game_name' => $session->game->name ?? 'N/A',
             'price' => $session->computed_price,
-            'duration_minutes' => $session->gamePricing->duration_minutes ?? 6,
-            'duration_seconds' => ($session->gamePricing->duration_minutes ?? 6) * 60
+            'duration_minutes' => $session->gamePricing->duration_minutes ?? null,
+            'duration_seconds' => $session->gamePricing->duration_minutes ? $session->gamePricing->duration_minutes * 60 : null,
+            'pricing_mode' => $pricingMode,
+            'matches_count' => $session->gamePricing->matches_count ?? null
         ];
     }
 }

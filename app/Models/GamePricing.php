@@ -10,12 +10,14 @@ class GamePricing extends Model
         'game_id',
         'pricing_mode_id',
         'duration_minutes',
+        'matches_count',
         'price'
     ];
 
     protected $casts = [
         'price' => 'decimal:2',
-        'duration_minutes' => 'integer'
+        'duration_minutes' => 'integer',
+        'matches_count' => 'integer'
     ];
 
     // 🎮 Game

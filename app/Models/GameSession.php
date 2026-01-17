@@ -17,6 +17,7 @@ class GameSession extends Model
         'customer_id',
         'start_time',
         'ended_at',
+        'matches_played',
         'computed_price',
         'status'
     ];
@@ -24,7 +25,8 @@ class GameSession extends Model
     protected $casts = [
         'start_time' => 'datetime',
         'ended_at' => 'datetime',
-        'computed_price' => 'decimal:2'
+        'computed_price' => 'decimal:2',
+        'matches_played' => 'integer'
     ];
 
     // 🎮 Game
