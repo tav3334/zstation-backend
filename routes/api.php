@@ -93,6 +93,24 @@ Route::get('/health', function () {
 // ========== TEMPORARY FIX ENDPOINT ==========
 Route::get('/fix/stop-all-sessions', [FixSessionsController::class, 'stopAllSessions']);
 
+// ========== DEBUG ENDPOINT ==========
+Route::get('/debug/machine-test', function () {
+    try {
+        $machines = \App\Models\Machine::all();
+        return response()->json([
+            'success' => true,
+            'machines_count' => $machines->count(),
+            'machines' => $machines
+        ]);
+    } catch (\Exception $e) {
+        return response()->json([
+            'success' => false,
+            'error' => $e->getMessage(),
+            'trace' => $e->getTraceAsString()
+        ], 500);
+    }
+});
+
 
 // ========== ROUTES SUPER ADMIN UNIQUEMENT ==========
 Route::middleware(['auth:sanctum', 'role:super_admin'])->prefix('super-admin')->group(function () {
