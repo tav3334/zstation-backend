@@ -15,7 +15,8 @@ class Machine extends Model
     ];
 
     // ✅ Ajouter active_session aux attributs JSON
-    protected $appends = ['active_session'];
+    // Temporairement désactivé pour debug
+    protected $appends = [];
 
     // 🎮 Relation: Session active
     public function activeSession()
