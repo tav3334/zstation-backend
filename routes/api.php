@@ -111,6 +111,21 @@ Route::get('/debug/machine-test', function () {
     }
 });
 
+Route::get('/debug/machines-controller', function () {
+    try {
+        $controller = new \App\Http\Controllers\Api\MachineController();
+        return $controller->index();
+    } catch (\Exception $e) {
+        return response()->json([
+            'success' => false,
+            'error' => $e->getMessage(),
+            'line' => $e->getLine(),
+            'file' => $e->getFile(),
+            'trace' => explode("\n", $e->getTraceAsString())
+        ], 500);
+    }
+});
+
 
 // ========== ROUTES SUPER ADMIN UNIQUEMENT ==========
 Route::middleware(['auth:sanctum', 'role:super_admin'])->prefix('super-admin')->group(function () {
