@@ -247,6 +247,15 @@ class GameController extends Controller
         try {
             $game = Game::findOrFail($id);
 
+            // Check if game has sessions
+            $sessionsCount = \App\Models\GameSession::where('game_id', $id)->count();
+            if ($sessionsCount > 0) {
+                return response()->json([
+                    'success' => false,
+                    'message' => "Impossible de supprimer ce jeu car il a {$sessionsCount} session(s) associée(s). Veuillez d'abord supprimer les sessions."
+                ], 400);
+            }
+
             DB::beginTransaction();
 
             // Delete associated pricings
