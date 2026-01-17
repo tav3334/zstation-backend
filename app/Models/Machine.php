@@ -40,7 +40,11 @@ class Machine extends Model
             return null;
         }
 
-        $pricingMode = $session->gamePricing->pricingMode->code ?? 'fixed';
+        // Gérer le cas où pricingMode peut être null
+        $pricingMode = 'fixed'; // Default
+        if ($session->gamePricing && $session->gamePricing->pricingMode) {
+            $pricingMode = $session->gamePricing->pricingMode->code;
+        }
 
         return [
             'id' => $session->id,
