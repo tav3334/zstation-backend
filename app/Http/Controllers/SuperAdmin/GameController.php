@@ -241,22 +241,17 @@ class GameController extends Controller
 
     /**
      * Remove the specified game
+     * Super Admin can delete games with all associated sessions and pricings
      */
     public function destroy($id)
     {
         try {
             $game = Game::findOrFail($id);
 
-            // Check if game has sessions
-            $sessionsCount = \App\Models\GameSession::where('game_id', $id)->count();
-            if ($sessionsCount > 0) {
-                return response()->json([
-                    'success' => false,
-                    'message' => "Impossible de supprimer ce jeu car il a {$sessionsCount} session(s) associée(s). Veuillez d'abord supprimer les sessions."
-                ], 400);
-            }
-
             DB::beginTransaction();
+
+            // Delete all associated sessions (cascade delete)
+            \App\Models\GameSession::where('game_id', $id)->delete();
 
             // Delete associated pricings
             GamePricing::where('game_id', $id)->delete();
@@ -268,7 +263,7 @@ class GameController extends Controller
 
             return response()->json([
                 'success' => true,
-                'message' => 'Jeu supprimé avec succès'
+                'message' => 'Jeu supprimé avec succès (avec toutes les sessions et tarifs associés)'
             ], 200);
         } catch (\Exception $e) {
             DB::rollBack();
