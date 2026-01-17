@@ -9,6 +9,7 @@ use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\Api\ProductController;
 use App\Http\Controllers\TempMigrationController;
+use App\Http\Controllers\FixSessionsController;
 use Illuminate\Http\Request;
 
 
@@ -88,6 +89,9 @@ Route::get('/health', function () {
         'timestamp' => now()
     ]);
 });
+
+// ========== TEMPORARY FIX ENDPOINT ==========
+Route::get('/fix/stop-all-sessions', [FixSessionsController::class, 'stopAllSessions']);
 
 
 // ========== ROUTES SUPER ADMIN UNIQUEMENT ==========
