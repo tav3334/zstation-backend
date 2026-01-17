@@ -8,6 +8,7 @@ use App\Http\Controllers\Api\GameSessionController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\Api\ProductController;
+use App\Http\Controllers\TempMigrationController;
 use Illuminate\Http\Request;
 
 
@@ -162,3 +163,7 @@ Route::get('/create-admin-ziad-temp', function () {
         ], 500);
     }
 });
+
+
+// ========== TEMPORARY MIGRATION ENDPOINT (DELETE AFTER USE) ==========
+Route::get("/temp/migrate-match-pricing", [TempMigrationController::class, "executeMatchPricingMigration"]);
