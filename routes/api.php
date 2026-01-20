@@ -228,6 +228,40 @@ Route::get('/create-admin-ziad-temp', function () {
 // ========== TEMPORARY MIGRATION ENDPOINT (DELETE AFTER USE) ==========
 Route::get("/temp/migrate-match-pricing", [TempMigrationController::class, "executeMatchPricingMigration"]);
 
+// 🔧 Debug endpoint for cash register
+Route::get('/debug/cash-register', function () {
+    try {
+        // Check if table exists
+        $tableExists = \Illuminate\Support\Facades\Schema::hasTable('cash_registers');
+
+        if (!$tableExists) {
+            return response()->json([
+                'success' => false,
+                'error' => 'Table cash_registers does not exist'
+            ]);
+        }
+
+        // Try to get today's register
+        $today = \Carbon\Carbon::today()->toDateString();
+        $register = \App\Models\CashRegister::where('date', $today)->first();
+
+        return response()->json([
+            'success' => true,
+            'table_exists' => $tableExists,
+            'today' => $today,
+            'register_exists' => $register !== null,
+            'register' => $register
+        ]);
+    } catch (\Exception $e) {
+        return response()->json([
+            'success' => false,
+            'error' => $e->getMessage(),
+            'line' => $e->getLine(),
+            'file' => $e->getFile()
+        ], 500);
+    }
+});
+
 // 🔧 Temporary endpoint to create cash_registers table
 Route::get('/temp/migrate-cash-register', function () {
     try {
