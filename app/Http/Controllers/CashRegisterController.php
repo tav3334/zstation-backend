@@ -72,10 +72,16 @@ class CashRegisterController extends Controller
     // Formater la réponse
     private function formatRegister(CashRegister $register)
     {
+        // Handle date - could be string or Carbon instance
+        $date = $register->date;
+        if (is_string($date)) {
+            $date = Carbon::parse($date);
+        }
+
         return [
             'id' => $register->id,
-            'date' => $register->date->format('Y-m-d'),
-            'date_formatted' => $register->date->format('d/m/Y'),
+            'date' => $date->format('Y-m-d'),
+            'date_formatted' => $date->format('d/m/Y'),
             'opening_balance' => (float) $register->opening_balance,
             'total_cash_in' => (float) $register->total_cash_in,
             'total_change_out' => (float) $register->total_change_out,
@@ -84,8 +90,8 @@ class CashRegisterController extends Controller
             'net_profit' => (float) $register->net_profit,
             'closing_balance' => $register->closing_balance ? (float) $register->closing_balance : null,
             'is_open' => $register->is_open,
-            'opened_at' => $register->opened_at?->format('H:i'),
-            'closed_at' => $register->closed_at?->format('H:i'),
+            'opened_at' => $register->opened_at ? Carbon::parse($register->opened_at)->format('H:i') : null,
+            'closed_at' => $register->closed_at ? Carbon::parse($register->closed_at)->format('H:i') : null,
             'notes' => $register->notes,
         ];
     }
