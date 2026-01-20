@@ -228,36 +228,55 @@ Route::get('/create-admin-ziad-temp', function () {
 // ========== TEMPORARY MIGRATION ENDPOINT (DELETE AFTER USE) ==========
 Route::get("/temp/migrate-match-pricing", [TempMigrationController::class, "executeMatchPricingMigration"]);
 
-// 🔧 Debug endpoint for cash register
+// 🔧 Debug endpoint for cash register - test full today() logic
 Route::get('/debug/cash-register', function () {
     try {
-        // Check if table exists
-        $tableExists = \Illuminate\Support\Facades\Schema::hasTable('cash_registers');
-
-        if (!$tableExists) {
-            return response()->json([
-                'success' => false,
-                'error' => 'Table cash_registers does not exist'
-            ]);
-        }
-
-        // Try to get today's register
         $today = \Carbon\Carbon::today()->toDateString();
         $register = \App\Models\CashRegister::where('date', $today)->first();
 
+        if (!$register) {
+            return response()->json([
+                'success' => true,
+                'message' => 'No register for today, would create new one'
+            ]);
+        }
+
+        // Test formatRegister logic step by step
+        $openingBalance = (float) $register->opening_balance;
+        $totalCashIn = (float) $register->total_cash_in;
+        $totalChangeOut = (float) $register->total_change_out;
+        $withdrawnAmount = (float) $register->withdrawn_amount;
+
+        $currentBalance = $openingBalance + $totalCashIn - $totalChangeOut - $withdrawnAmount;
+        $netProfit = $totalCashIn - $totalChangeOut;
+
+        // Test date formatting
+        $dateVal = $register->date;
+        $dateType = gettype($dateVal);
+        $dateClass = is_object($dateVal) ? get_class($dateVal) : 'not an object';
+
         return response()->json([
             'success' => true,
-            'table_exists' => $tableExists,
-            'today' => $today,
-            'register_exists' => $register !== null,
-            'register' => $register
+            'register_id' => $register->id,
+            'date_value' => $dateVal,
+            'date_type' => $dateType,
+            'date_class' => $dateClass,
+            'opening_balance' => $openingBalance,
+            'total_cash_in' => $totalCashIn,
+            'total_change_out' => $totalChangeOut,
+            'withdrawn_amount' => $withdrawnAmount,
+            'current_balance' => $currentBalance,
+            'net_profit' => $netProfit,
+            'opened_at_raw' => $register->getAttributes()['opened_at'] ?? null,
+            'closed_at_raw' => $register->getAttributes()['closed_at'] ?? null,
         ]);
     } catch (\Exception $e) {
         return response()->json([
             'success' => false,
             'error' => $e->getMessage(),
             'line' => $e->getLine(),
-            'file' => $e->getFile()
+            'file' => $e->getFile(),
+            'trace' => array_slice(explode("\n", $e->getTraceAsString()), 0, 10)
         ], 500);
     }
 });
