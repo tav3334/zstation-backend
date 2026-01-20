@@ -20,16 +20,8 @@ class CashRegister extends Model
         'notes',
     ];
 
-    protected $casts = [
-        'date' => 'date',
-        'opening_balance' => 'decimal:2',
-        'total_cash_in' => 'decimal:2',
-        'total_change_out' => 'decimal:2',
-        'closing_balance' => 'decimal:2',
-        'withdrawn_amount' => 'decimal:2',
-        'opened_at' => 'datetime',
-        'closed_at' => 'datetime',
-    ];
+    // No casts - handle formatting in controller to avoid serialization issues
+    protected $casts = [];
 
     public function openedBy()
     {
