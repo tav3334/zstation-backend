@@ -339,8 +339,8 @@ Route::get('/debug/cash-register-full', function () {
         // Test syncWithPayments logic
         $date = $register->date;
 
-        // Check if Payment model works
-        $sessionsCash = \App\Models\Payment::whereDate('created_at', $date)->sum('cash_received');
+        // Check if Payment model works (amount_given = montant donné par le client)
+        $sessionsCash = \App\Models\Payment::whereDate('created_at', $date)->sum('amount_given');
         $sessionsChange = \App\Models\Payment::whereDate('created_at', $date)->sum('change_given');
 
         // Check if ProductSale model exists and works

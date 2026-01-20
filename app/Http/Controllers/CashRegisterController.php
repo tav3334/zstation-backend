@@ -51,9 +51,9 @@ class CashRegisterController extends Controller
     {
         $date = $register->date;
 
-        // Total cash reçu des sessions
+        // Total cash reçu des sessions (amount_given = montant donné par le client)
         $sessionsCash = Payment::whereDate('created_at', $date)
-            ->sum('cash_received');
+            ->sum('amount_given');
 
         // Total monnaie rendue des sessions
         $sessionsChange = Payment::whereDate('created_at', $date)
