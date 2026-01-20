@@ -10,6 +10,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\Api\ProductController;
 use App\Http\Controllers\TempMigrationController;
 use App\Http\Controllers\FixSessionsController;
+use App\Http\Controllers\CashRegisterController;
 use Illuminate\Http\Request;
 
 
@@ -55,6 +56,10 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/dashboard/payments', [DashboardController::class, 'payments']);
     Route::get('/dashboard/sessions', [DashboardController::class, 'sessions']);
 
+    // CAISSE (Fond de caisse)
+    Route::get('/cash-register/today', [CashRegisterController::class, 'today']);
+    Route::get('/cash-register/history', [CashRegisterController::class, 'history']);
+
     // PRODUCTS (Vente de snacks et boissons)
     Route::get('/products', [ProductController::class, 'index']);
     Route::post('/products/sell', [ProductController::class, 'sell']);
@@ -78,6 +83,11 @@ Route::middleware(['auth:sanctum', 'admin'])->group(function () {
     Route::put('/products/{id}', [ProductController::class, 'update']);
     Route::put('/products/{id}/stock', [ProductController::class, 'updateStock']);
     Route::delete('/products/{id}', [ProductController::class, 'destroy']);
+
+    // Gestion de la caisse (admin seulement)
+    Route::post('/cash-register/opening-balance', [CashRegisterController::class, 'setOpeningBalance']);
+    Route::post('/cash-register/withdraw', [CashRegisterController::class, 'withdraw']);
+    Route::post('/cash-register/close', [CashRegisterController::class, 'close']);
 
 });
 
