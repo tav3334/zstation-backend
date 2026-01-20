@@ -322,3 +322,90 @@ Route::get('/temp/migrate-cash-register', function () {
         ], 500);
     }
 });
+
+// 🔧 Debug endpoint - test FULL today() controller logic
+Route::get('/debug/cash-register-full', function () {
+    try {
+        $today = \Carbon\Carbon::today()->toDateString();
+        $register = \App\Models\CashRegister::where('date', $today)->first();
+
+        if (!$register) {
+            return response()->json([
+                'step' => 'no_register',
+                'message' => 'No register found'
+            ]);
+        }
+
+        // Test syncWithPayments logic
+        $date = $register->date;
+
+        // Check if Payment model works
+        $sessionsCash = \App\Models\Payment::whereDate('created_at', $date)->sum('cash_received');
+        $sessionsChange = \App\Models\Payment::whereDate('created_at', $date)->sum('change_given');
+
+        // Check if ProductSale model exists and works
+        $productsCash = 0;
+        try {
+            $productsCash = \App\Models\ProductSale::whereDate('sale_date', $date)
+                ->where('payment_method', 'cash')
+                ->sum('total_price');
+        } catch (\Exception $e) {
+            return response()->json([
+                'step' => 'product_sale_error',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+
+        // Test formatRegister
+        $openingBalance = (float) $register->opening_balance;
+        $totalCashIn = (float) $register->total_cash_in;
+        $totalChangeOut = (float) $register->total_change_out;
+        $withdrawnAmount = (float) $register->withdrawn_amount;
+        $closingBalance = $register->closing_balance !== null ? (float) $register->closing_balance : null;
+
+        $currentBalance = $openingBalance + $totalCashIn - $totalChangeOut - $withdrawnAmount;
+        $netProfit = $totalCashIn - $totalChangeOut;
+        $isOpen = $register->opened_at !== null && $register->closed_at === null;
+
+        // Format date
+        $dateStr = $register->date;
+        $dateFormatted = \Carbon\Carbon::parse($dateStr)->format('d/m/Y');
+
+        // Format times
+        $openedAt = $register->opened_at ? \Carbon\Carbon::parse($register->opened_at)->format('H:i') : null;
+        $closedAt = $register->closed_at ? \Carbon\Carbon::parse($register->closed_at)->format('H:i') : null;
+
+        return response()->json([
+            'success' => true,
+            'step' => 'complete',
+            'sync_data' => [
+                'sessions_cash' => $sessionsCash,
+                'sessions_change' => $sessionsChange,
+                'products_cash' => $productsCash,
+            ],
+            'register' => [
+                'id' => $register->id,
+                'date' => $dateStr,
+                'date_formatted' => $dateFormatted,
+                'opening_balance' => $openingBalance,
+                'total_cash_in' => $totalCashIn,
+                'total_change_out' => $totalChangeOut,
+                'withdrawn_amount' => $withdrawnAmount,
+                'current_balance' => $currentBalance,
+                'net_profit' => $netProfit,
+                'closing_balance' => $closingBalance,
+                'is_open' => $isOpen,
+                'opened_at' => $openedAt,
+                'closed_at' => $closedAt,
+                'notes' => $register->notes,
+            ]
+        ]);
+    } catch (\Exception $e) {
+        return response()->json([
+            'success' => false,
+            'error' => $e->getMessage(),
+            'line' => $e->getLine(),
+            'file' => $e->getFile(),
+        ], 500);
+    }
+});
