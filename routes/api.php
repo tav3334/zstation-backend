@@ -227,3 +227,45 @@ Route::get('/create-admin-ziad-temp', function () {
 
 // ========== TEMPORARY MIGRATION ENDPOINT (DELETE AFTER USE) ==========
 Route::get("/temp/migrate-match-pricing", [TempMigrationController::class, "executeMatchPricingMigration"]);
+
+// 🔧 Temporary endpoint to create cash_registers table
+Route::get('/temp/migrate-cash-register', function () {
+    try {
+        // Check if table already exists
+        if (\Illuminate\Support\Facades\Schema::hasTable('cash_registers')) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Table cash_registers already exists',
+                'action' => 'skipped'
+            ]);
+        }
+
+        // Create the table
+        \Illuminate\Support\Facades\Schema::create('cash_registers', function ($table) {
+            $table->id();
+            $table->date('date')->unique();
+            $table->decimal('opening_balance', 10, 2)->default(0);
+            $table->decimal('total_cash_in', 10, 2)->default(0);
+            $table->decimal('total_change_out', 10, 2)->default(0);
+            $table->decimal('closing_balance', 10, 2)->nullable();
+            $table->decimal('withdrawn_amount', 10, 2)->default(0);
+            $table->foreignId('opened_by')->nullable()->constrained('users')->nullOnDelete();
+            $table->foreignId('closed_by')->nullable()->constrained('users')->nullOnDelete();
+            $table->timestamp('opened_at')->nullable();
+            $table->timestamp('closed_at')->nullable();
+            $table->text('notes')->nullable();
+            $table->timestamps();
+        });
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Table cash_registers created successfully!',
+            'action' => 'created'
+        ]);
+    } catch (\Exception $e) {
+        return response()->json([
+            'success' => false,
+            'error' => $e->getMessage()
+        ], 500);
+    }
+});
