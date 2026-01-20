@@ -72,26 +72,59 @@ class CashRegisterController extends Controller
     // Formater la réponse
     private function formatRegister(CashRegister $register)
     {
-        // Handle date - could be string or Carbon instance
-        $date = $register->date;
-        if (is_string($date)) {
-            $date = Carbon::parse($date);
+        // Refresh to get latest data
+        $register->refresh();
+
+        // Parse values as floats
+        $openingBalance = (float) $register->opening_balance;
+        $totalCashIn = (float) $register->total_cash_in;
+        $totalChangeOut = (float) $register->total_change_out;
+        $withdrawnAmount = (float) $register->withdrawn_amount;
+        $closingBalance = $register->closing_balance !== null ? (float) $register->closing_balance : null;
+
+        // Calculate values directly
+        $currentBalance = $openingBalance + $totalCashIn - $totalChangeOut - $withdrawnAmount;
+        $netProfit = $totalCashIn - $totalChangeOut;
+        $isOpen = $register->opened_at !== null && $register->closed_at === null;
+
+        // Format date
+        $dateStr = $register->date;
+        if ($dateStr instanceof \DateTime || $dateStr instanceof \Carbon\Carbon) {
+            $dateFormatted = $dateStr->format('d/m/Y');
+            $dateStr = $dateStr->format('Y-m-d');
+        } else {
+            $dateFormatted = Carbon::parse($dateStr)->format('d/m/Y');
+        }
+
+        // Format times
+        $openedAt = null;
+        if ($register->opened_at) {
+            $openedAt = ($register->opened_at instanceof \DateTime || $register->opened_at instanceof \Carbon\Carbon)
+                ? $register->opened_at->format('H:i')
+                : Carbon::parse($register->opened_at)->format('H:i');
+        }
+
+        $closedAt = null;
+        if ($register->closed_at) {
+            $closedAt = ($register->closed_at instanceof \DateTime || $register->closed_at instanceof \Carbon\Carbon)
+                ? $register->closed_at->format('H:i')
+                : Carbon::parse($register->closed_at)->format('H:i');
         }
 
         return [
             'id' => $register->id,
-            'date' => $date->format('Y-m-d'),
-            'date_formatted' => $date->format('d/m/Y'),
-            'opening_balance' => (float) $register->opening_balance,
-            'total_cash_in' => (float) $register->total_cash_in,
-            'total_change_out' => (float) $register->total_change_out,
-            'withdrawn_amount' => (float) $register->withdrawn_amount,
-            'current_balance' => (float) $register->current_balance,
-            'net_profit' => (float) $register->net_profit,
-            'closing_balance' => $register->closing_balance ? (float) $register->closing_balance : null,
-            'is_open' => $register->is_open,
-            'opened_at' => $register->opened_at ? Carbon::parse($register->opened_at)->format('H:i') : null,
-            'closed_at' => $register->closed_at ? Carbon::parse($register->closed_at)->format('H:i') : null,
+            'date' => $dateStr,
+            'date_formatted' => $dateFormatted,
+            'opening_balance' => $openingBalance,
+            'total_cash_in' => $totalCashIn,
+            'total_change_out' => $totalChangeOut,
+            'withdrawn_amount' => $withdrawnAmount,
+            'current_balance' => $currentBalance,
+            'net_profit' => $netProfit,
+            'closing_balance' => $closingBalance,
+            'is_open' => $isOpen,
+            'opened_at' => $openedAt,
+            'closed_at' => $closedAt,
             'notes' => $register->notes,
         ];
     }
