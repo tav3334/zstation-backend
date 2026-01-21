@@ -81,12 +81,24 @@ class GameController extends Controller
         try {
             DB::beginTransaction();
 
+            // Get or create default game type
+            $gameType = \App\Models\GameType::first();
+            if (!$gameType) {
+                $gameType = \App\Models\GameType::create(['name' => 'Standard']);
+            }
+
+            // Get default pricing mode
+            $pricingMode = \App\Models\PricingMode::where('code', 'fixed')->first();
+            if (!$pricingMode) {
+                $pricingMode = \App\Models\PricingMode::first();
+            }
+            $pricingModeId = $pricingMode ? $pricingMode->id : 1;
+
             // Create game
             $game = Game::create([
                 'name' => $request->name,
                 'active' => true,
-                'game_type_id' => 1, // Default game type
-                'default_price_per_hour' => $request->price_1h
+                'game_type_id' => $gameType->id
             ]);
 
             // Create pricing entries
@@ -101,7 +113,7 @@ class GameController extends Controller
             foreach ($pricings as $pricing) {
                 GamePricing::create([
                     'game_id' => $game->id,
-                    'pricing_mode_id' => 1, // Default pricing mode
+                    'pricing_mode_id' => $pricingModeId,
                     'duration_minutes' => $pricing['duration_minutes'],
                     'price' => $pricing['price']
                 ]);
@@ -250,7 +262,16 @@ class GameController extends Controller
 
             DB::beginTransaction();
 
-            // Delete all associated sessions (cascade delete)
+            // Get all pricing IDs for this game
+            $pricingIds = GamePricing::where('game_id', $id)->pluck('id');
+
+            // Detach sessions from pricings (set pricing_reference_id to null)
+            if ($pricingIds->count() > 0) {
+                \App\Models\GameSession::whereIn('pricing_reference_id', $pricingIds)
+                    ->update(['pricing_reference_id' => null]);
+            }
+
+            // Delete all associated sessions
             \App\Models\GameSession::where('game_id', $id)->delete();
 
             // Delete associated pricings
@@ -280,6 +301,10 @@ class GameController extends Controller
      */
     private function updateOrCreatePricing($gameId, $durationMinutes, $price)
     {
+        // Get default pricing mode
+        $pricingMode = \App\Models\PricingMode::where('code', 'fixed')->first();
+        $pricingModeId = $pricingMode ? $pricingMode->id : 1;
+
         GamePricing::updateOrCreate(
             [
                 'game_id' => $gameId,
@@ -287,7 +312,7 @@ class GameController extends Controller
             ],
             [
                 'price' => $price,
-                'pricing_mode_id' => 1
+                'pricing_mode_id' => $pricingModeId
             ]
         );
     }
@@ -300,8 +325,8 @@ class GameController extends Controller
         $validator = Validator::make($request->all(), [
             'pricing_mode_id' => 'required|integer|exists:pricing_modes,id',
             'price' => 'required|numeric|min:0',
-            'duration_minutes' => 'required_if:pricing_mode_id,1|nullable|integer|min:1',
-            'matches_count' => 'required_if:pricing_mode_id,5|nullable|integer|min:1',
+            'duration_minutes' => 'nullable|integer|min:1',
+            'matches_count' => 'nullable|integer|min:1',
         ]);
 
         if ($validator->fails()) {
@@ -309,6 +334,14 @@ class GameController extends Controller
                 'success' => false,
                 'message' => 'Erreur de validation',
                 'errors' => $validator->errors()
+            ], 422);
+        }
+
+        // Validate that at least one of duration_minutes or matches_count is provided
+        if (!$request->duration_minutes && !$request->matches_count) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Veuillez spécifier soit la durée en minutes, soit le nombre de matchs'
             ], 422);
         }
 
@@ -391,13 +424,22 @@ class GameController extends Controller
                 ->where('id', $pricingId)
                 ->firstOrFail();
 
+            DB::beginTransaction();
+
+            // Detach sessions that reference this pricing (set to null)
+            \App\Models\GameSession::where('pricing_reference_id', $pricingId)
+                ->update(['pricing_reference_id' => null]);
+
             $pricing->delete();
+
+            DB::commit();
 
             return response()->json([
                 'success' => true,
                 'message' => 'Tarif supprimé avec succès'
             ], 200);
         } catch (\Exception $e) {
+            DB::rollBack();
             return response()->json([
                 'success' => false,
                 'message' => 'Erreur lors de la suppression du tarif',
