@@ -262,16 +262,7 @@ class GameController extends Controller
 
             DB::beginTransaction();
 
-            // Get all pricing IDs for this game
-            $pricingIds = GamePricing::where('game_id', $id)->pluck('id');
-
-            // Detach sessions from pricings (set pricing_reference_id to null)
-            if ($pricingIds->count() > 0) {
-                \App\Models\GameSession::whereIn('pricing_reference_id', $pricingIds)
-                    ->update(['pricing_reference_id' => null]);
-            }
-
-            // Delete all associated sessions
+            // Delete all associated sessions first (they reference pricings)
             \App\Models\GameSession::where('game_id', $id)->delete();
 
             // Delete associated pricings
@@ -426,9 +417,8 @@ class GameController extends Controller
 
             DB::beginTransaction();
 
-            // Detach sessions that reference this pricing (set to null)
-            \App\Models\GameSession::where('pricing_reference_id', $pricingId)
-                ->update(['pricing_reference_id' => null]);
+            // Delete sessions that reference this pricing (since the column is not nullable)
+            \App\Models\GameSession::where('pricing_reference_id', $pricingId)->delete();
 
             $pricing->delete();
 
