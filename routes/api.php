@@ -173,6 +173,48 @@ Route::middleware(['auth:sanctum', 'role:super_admin'])->prefix('super-admin')->
             'pricing_modes' => \App\Models\PricingMode::all()
         ]);
     });
+
+    // Statistiques du Dashboard Super Admin
+    Route::get('/stats', function () {
+        $today = now()->startOfDay();
+        $thisMonth = now()->startOfMonth();
+
+        // Sessions aujourd'hui
+        $sessionsToday = \App\Models\GameSession::whereDate('created_at', $today)->count();
+
+        // Sessions actives en ce moment
+        $activeSessions = \App\Models\GameSession::where('status', 'active')->count();
+
+        // Revenu aujourd'hui
+        $revenueToday = \App\Models\GameSession::whereDate('created_at', $today)
+            ->where('status', 'completed')
+            ->sum('computed_price') ?? 0;
+
+        // Revenu ce mois
+        $revenueMonth = \App\Models\GameSession::where('created_at', '>=', $thisMonth)
+            ->where('status', 'completed')
+            ->sum('computed_price') ?? 0;
+
+        // Total sessions terminées
+        $totalCompletedSessions = \App\Models\GameSession::where('status', 'completed')->count();
+
+        // Machines disponibles / occupées
+        $machinesAvailable = \App\Models\Machine::where('status', 'available')->count();
+        $machinesOccupied = \App\Models\Machine::where('status', '!=', 'available')->count();
+
+        return response()->json([
+            'success' => true,
+            'stats' => [
+                'sessions_today' => $sessionsToday,
+                'active_sessions' => $activeSessions,
+                'revenue_today' => round($revenueToday, 2),
+                'revenue_month' => round($revenueMonth, 2),
+                'total_completed_sessions' => $totalCompletedSessions,
+                'machines_available' => $machinesAvailable,
+                'machines_occupied' => $machinesOccupied,
+            ]
+        ]);
+    });
 });
 // 🔧 Endpoint temporaire pour créer l'admin Ziad
 Route::get('/create-admin-ziad-temp', function () {
