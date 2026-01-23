@@ -174,44 +174,94 @@ Route::middleware(['auth:sanctum', 'role:super_admin'])->prefix('super-admin')->
         ]);
     });
 
-    // Statistiques du Dashboard Super Admin
+    // Statistiques du Dashboard Super Admin (gestion du système)
     Route::get('/stats', function () {
-        $today = now()->startOfDay();
-        $thisMonth = now()->startOfMonth();
+        // === UTILISATEURS ===
+        $totalUsers = \App\Models\User::count();
+        $usersByRole = \App\Models\User::select('role', \Illuminate\Support\Facades\DB::raw('COUNT(*) as count'))
+            ->groupBy('role')
+            ->pluck('count', 'role')
+            ->toArray();
+        $recentUsers = \App\Models\User::where('created_at', '>=', now()->subDays(7))->count();
 
-        // Sessions aujourd'hui
-        $sessionsToday = \App\Models\GameSession::whereDate('created_at', $today)->count();
+        // === MACHINES ===
+        $totalMachines = \App\Models\Machine::count();
+        $machinesByStatus = \App\Models\Machine::select('status', \Illuminate\Support\Facades\DB::raw('COUNT(*) as count'))
+            ->groupBy('status')
+            ->pluck('count', 'status')
+            ->toArray();
 
-        // Sessions actives en ce moment
-        $activeSessions = \App\Models\GameSession::where('status', 'active')->count();
+        // === JEUX ===
+        $totalGames = \App\Models\Game::count();
+        $activeGames = \App\Models\Game::where('active', true)->count();
+        $inactiveGames = \App\Models\Game::where('active', false)->count();
+        $gamesByType = \App\Models\Game::with('type')
+            ->get()
+            ->groupBy(function ($game) {
+                return $game->type->name ?? 'Non catégorisé';
+            })
+            ->map(function ($games) {
+                return $games->count();
+            })
+            ->toArray();
 
-        // Revenu aujourd'hui
-        $revenueToday = \App\Models\GameSession::whereDate('created_at', $today)
-            ->where('status', 'completed')
-            ->sum('computed_price') ?? 0;
+        // === TARIFS ===
+        $totalPricings = \App\Models\GamePricing::count();
+        $gamesWithPricings = \App\Models\Game::has('pricings')->count();
+        $gamesWithoutPricings = \App\Models\Game::doesntHave('pricings')->count();
 
-        // Revenu ce mois
-        $revenueMonth = \App\Models\GameSession::where('created_at', '>=', $thisMonth)
-            ->where('status', 'completed')
-            ->sum('computed_price') ?? 0;
+        // === TYPES DE JEUX ===
+        $totalGameTypes = \App\Models\GameType::count();
 
-        // Total sessions terminées
-        $totalCompletedSessions = \App\Models\GameSession::where('status', 'completed')->count();
-
-        // Machines disponibles / occupées
-        $machinesAvailable = \App\Models\Machine::where('status', 'available')->count();
-        $machinesOccupied = \App\Models\Machine::where('status', '!=', 'available')->count();
+        // === PRODUITS ===
+        $totalProducts = \App\Models\Product::count();
+        $productsAvailable = \App\Models\Product::where('is_available', true)->count();
+        $productsOutOfStock = \App\Models\Product::where('stock', '<=', 0)->count();
+        $productsLowStock = \App\Models\Product::where('stock', '>', 0)->where('stock', '<=', 5)->count();
+        $productsByCategory = \App\Models\Product::select('category', \Illuminate\Support\Facades\DB::raw('COUNT(*) as count'))
+            ->groupBy('category')
+            ->pluck('count', 'category')
+            ->toArray();
 
         return response()->json([
             'success' => true,
             'stats' => [
-                'sessions_today' => $sessionsToday,
-                'active_sessions' => $activeSessions,
-                'revenue_today' => round($revenueToday, 2),
-                'revenue_month' => round($revenueMonth, 2),
-                'total_completed_sessions' => $totalCompletedSessions,
-                'machines_available' => $machinesAvailable,
-                'machines_occupied' => $machinesOccupied,
+                // Utilisateurs
+                'users' => [
+                    'total' => $totalUsers,
+                    'by_role' => $usersByRole,
+                    'recent_7_days' => $recentUsers,
+                ],
+                // Machines
+                'machines' => [
+                    'total' => $totalMachines,
+                    'by_status' => $machinesByStatus,
+                ],
+                // Jeux
+                'games' => [
+                    'total' => $totalGames,
+                    'active' => $activeGames,
+                    'inactive' => $inactiveGames,
+                    'by_type' => $gamesByType,
+                ],
+                // Tarifs
+                'pricings' => [
+                    'total' => $totalPricings,
+                    'games_with_pricings' => $gamesWithPricings,
+                    'games_without_pricings' => $gamesWithoutPricings,
+                ],
+                // Types de jeux
+                'game_types' => [
+                    'total' => $totalGameTypes,
+                ],
+                // Produits
+                'products' => [
+                    'total' => $totalProducts,
+                    'available' => $productsAvailable,
+                    'out_of_stock' => $productsOutOfStock,
+                    'low_stock' => $productsLowStock,
+                    'by_category' => $productsByCategory,
+                ],
             ]
         ]);
     });
