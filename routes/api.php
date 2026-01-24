@@ -60,6 +60,19 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/cash-register/today', [CashRegisterController::class, 'today']);
     Route::get('/cash-register/history', [CashRegisterController::class, 'history']);
 
+    // Debug: Check current user's organization
+    Route::get('/debug/my-org', function () {
+        $user = auth()->user();
+        return response()->json([
+            'user_id' => $user->id,
+            'name' => $user->name,
+            'email' => $user->email,
+            'role' => $user->role,
+            'organization_id' => $user->organization_id,
+            'organization' => $user->organization,
+        ]);
+    });
+
     // PRODUCTS (Vente de snacks et boissons)
     Route::get('/products', [ProductController::class, 'index']);
     Route::post('/products/sell', [ProductController::class, 'sell']);
