@@ -419,7 +419,11 @@ Route::get('/debug/cash-register', function () {
 
         return response()->json([
             'success' => true,
+            'auth_info' => $authInfo,
+            'all_registers' => $allRegisters,
+            'register_raw' => $registerRaw,
             'register_id' => $register->id,
+            'organization_id' => $register->organization_id,
             'date_value' => $dateVal,
             'date_type' => $dateType,
             'date_class' => $dateClass,
