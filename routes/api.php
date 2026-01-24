@@ -708,3 +708,61 @@ Route::get('/debug/cash-register-full', function () {
         ], 500);
     }
 });
+
+// 🔧 Add organization_id to cash_registers and migrate data
+Route::get('/temp/migrate-cash-registers-org', function () {
+    try {
+        $results = [];
+
+        // Check if column exists
+        if (!\Illuminate\Support\Facades\Schema::hasColumn('cash_registers', 'organization_id')) {
+            \Illuminate\Support\Facades\Schema::table('cash_registers', function ($table) {
+                $table->foreignId('organization_id')->nullable()->after('notes')->constrained('organizations')->nullOnDelete();
+            });
+            // Remove unique constraint on date (each org can have a register per day)
+            try {
+                \Illuminate\Support\Facades\DB::statement('ALTER TABLE cash_registers DROP INDEX cash_registers_date_unique');
+            } catch (\Exception $e) {
+                // Index might not exist
+            }
+            // Add unique constraint on date + organization_id
+            try {
+                \Illuminate\Support\Facades\Schema::table('cash_registers', function ($table) {
+                    $table->unique(['date', 'organization_id']);
+                });
+            } catch (\Exception $e) {
+                // May already exist
+            }
+            $results['column'] = 'created';
+        } else {
+            $results['column'] = 'already exists';
+        }
+
+        // Get default organization
+        $defaultOrg = \App\Models\Organization::first();
+        if (!$defaultOrg) {
+            return response()->json([
+                'success' => false,
+                'error' => 'No organization found. Create one first.'
+            ], 400);
+        }
+
+        // Migrate registers without organization
+        $updated = \Illuminate\Support\Facades\DB::table('cash_registers')
+            ->whereNull('organization_id')
+            ->update(['organization_id' => $defaultOrg->id]);
+
+        $results['registers_updated'] = $updated;
+        $results['default_org'] = $defaultOrg->name;
+
+        return response()->json([
+            'success' => true,
+            'results' => $results
+        ]);
+    } catch (\Exception $e) {
+        return response()->json([
+            'success' => false,
+            'error' => $e->getMessage()
+        ], 500);
+    }
+});

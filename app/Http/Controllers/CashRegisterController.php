@@ -14,6 +14,16 @@ class CashRegisterController extends Controller
     // Obtenir la caisse du jour (ou la créer si elle n'existe pas)
     public function today()
     {
+        $user = Auth::user();
+
+        // Vérifier que l'utilisateur a une organisation
+        if (!$user->isSuperAdmin() && !$user->organization_id) {
+            return response()->json([
+                'error' => 'Utilisateur non assigné à une organisation',
+                'register' => null
+            ], 400);
+        }
+
         $today = Carbon::today()->toDateString();
 
         $register = CashRegister::where('date', $today)->first();
@@ -35,6 +45,7 @@ class CashRegisterController extends Controller
                 'total_change_out' => 0,
                 'opened_by' => Auth::id(),
                 'opened_at' => now(),
+                'organization_id' => $user->organization_id,
             ]);
         }
 
@@ -136,6 +147,7 @@ class CashRegisterController extends Controller
             'amount' => 'required|numeric|min:0',
         ]);
 
+        $user = Auth::user();
         $today = Carbon::today()->toDateString();
         $register = CashRegister::where('date', $today)->first();
 
@@ -145,6 +157,7 @@ class CashRegisterController extends Controller
                 'opening_balance' => $request->amount,
                 'opened_by' => Auth::id(),
                 'opened_at' => now(),
+                'organization_id' => $user->organization_id,
             ]);
         } else {
             $register->opening_balance = $request->amount;
