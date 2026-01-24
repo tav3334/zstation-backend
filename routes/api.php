@@ -835,3 +835,40 @@ Route::get('/temp/fix-cash-register-unique', function () {
         ], 500);
     }
 });
+
+// 🔧 Add address and phone columns to organizations
+Route::get('/temp/migrate-organizations-fields', function () {
+    try {
+        $results = [];
+
+        // Add address column
+        if (!\Illuminate\Support\Facades\Schema::hasColumn('organizations', 'address')) {
+            \Illuminate\Support\Facades\Schema::table('organizations', function ($table) {
+                $table->string('address')->nullable()->after('is_active');
+            });
+            $results['address'] = 'added';
+        } else {
+            $results['address'] = 'already exists';
+        }
+
+        // Add phone column
+        if (!\Illuminate\Support\Facades\Schema::hasColumn('organizations', 'phone')) {
+            \Illuminate\Support\Facades\Schema::table('organizations', function ($table) {
+                $table->string('phone', 20)->nullable()->after('address');
+            });
+            $results['phone'] = 'added';
+        } else {
+            $results['phone'] = 'already exists';
+        }
+
+        return response()->json([
+            'success' => true,
+            'results' => $results
+        ]);
+    } catch (\Exception $e) {
+        return response()->json([
+            'success' => false,
+            'error' => $e->getMessage()
+        ], 500);
+    }
+});

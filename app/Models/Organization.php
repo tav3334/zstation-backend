@@ -10,6 +10,8 @@ class Organization extends Model
         'name',
         'code',
         'is_active',
+        'address',
+        'phone',
     ];
 
     protected $casts = [
