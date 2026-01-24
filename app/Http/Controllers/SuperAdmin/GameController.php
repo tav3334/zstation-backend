@@ -17,7 +17,10 @@ class GameController extends Controller
     public function index()
     {
         try {
-            $games = Game::with(['pricings.pricingMode'])
+            // SuperAdmin voit tous les jeux sans filtre d'organisation
+            $games = Game::withoutGlobalScope('organization')
+                ->with(['pricings.pricingMode', 'organization'])
+                ->orderBy('organization_id', 'asc')
                 ->orderBy('created_at', 'desc')
                 ->get()
                 ->map(function ($game) {
@@ -25,6 +28,8 @@ class GameController extends Controller
                         'id' => $game->id,
                         'name' => $game->name,
                         'active' => $game->active,
+                        'organization_id' => $game->organization_id,
+                        'organization_name' => $game->organization->name ?? 'Non assigné',
                         'pricings' => $game->pricings->map(function ($pricing) {
                             return [
                                 'id' => $pricing->id,
@@ -68,6 +73,7 @@ class GameController extends Controller
             'price_1h' => 'required|numeric|min:0',
             'price_2h' => 'required|numeric|min:0',
             'price_3h' => 'required|numeric|min:0',
+            'organization_id' => 'required|exists:organizations,id',
         ]);
 
         if ($validator->fails()) {
@@ -94,11 +100,12 @@ class GameController extends Controller
             }
             $pricingModeId = $pricingMode ? $pricingMode->id : 1;
 
-            // Create game
+            // Create game with organization
             $game = Game::create([
                 'name' => $request->name,
                 'active' => true,
-                'game_type_id' => $gameType->id
+                'game_type_id' => $gameType->id,
+                'organization_id' => $request->organization_id
             ]);
 
             // Create pricing entries
@@ -121,12 +128,16 @@ class GameController extends Controller
 
             DB::commit();
 
+            $game->load('organization');
+
             return response()->json([
                 'success' => true,
                 'message' => 'Jeu créé avec succès',
                 'game' => [
                     'id' => $game->id,
                     'name' => $game->name,
+                    'organization_id' => $game->organization_id,
+                    'organization_name' => $game->organization->name ?? 'Non assigné',
                     'price_6min' => $request->price_6min,
                     'price_30min' => $request->price_30min,
                     'price_1h' => $request->price_1h,
@@ -151,7 +162,9 @@ class GameController extends Controller
     public function show($id)
     {
         try {
-            $game = Game::with('pricings')->findOrFail($id);
+            $game = Game::withoutGlobalScope('organization')
+                ->with(['pricings', 'organization'])
+                ->findOrFail($id);
 
             $pricing6min = $game->pricings->firstWhere('duration_minutes', 6);
             $pricing30min = $game->pricings->firstWhere('duration_minutes', 30);
@@ -164,6 +177,8 @@ class GameController extends Controller
                 'game' => [
                     'id' => $game->id,
                     'name' => $game->name,
+                    'organization_id' => $game->organization_id,
+                    'organization_name' => $game->organization->name ?? 'Non assigné',
                     'price_6min' => $pricing6min ? $pricing6min->price : 0,
                     'price_30min' => $pricing30min ? $pricing30min->price : 0,
                     'price_1h' => $pricing1h ? $pricing1h->price : 0,
@@ -186,7 +201,7 @@ class GameController extends Controller
     public function update(Request $request, $id)
     {
         try {
-            $game = Game::findOrFail($id);
+            $game = Game::withoutGlobalScope('organization')->findOrFail($id);
 
             $validator = Validator::make($request->all(), [
                 'name' => 'sometimes|required|string|max:255',
@@ -258,7 +273,7 @@ class GameController extends Controller
     public function destroy($id)
     {
         try {
-            $game = Game::findOrFail($id);
+            $game = Game::withoutGlobalScope('organization')->findOrFail($id);
 
             DB::beginTransaction();
 
@@ -337,7 +352,7 @@ class GameController extends Controller
         }
 
         try {
-            $game = Game::findOrFail($gameId);
+            $game = Game::withoutGlobalScope('organization')->findOrFail($gameId);
 
             $pricing = GamePricing::create([
                 'game_id' => $gameId,

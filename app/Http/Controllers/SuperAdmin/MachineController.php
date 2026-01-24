@@ -15,15 +15,20 @@ class MachineController extends Controller
     public function index()
     {
         try {
-            $machines = Machine::with('activeSession')
+            // SuperAdmin voit toutes les machines sans filtre d'organisation
+            $machines = Machine::withoutGlobalScope('organization')
+                ->with(['activeSession', 'organization'])
+                ->orderBy('organization_id', 'asc')
                 ->orderBy('id', 'asc')
                 ->get()
                 ->map(function ($machine) {
                     return [
                         'id' => $machine->id,
-                        'machine_number' => $machine->id, // Using ID as machine number
+                        'machine_number' => $machine->id,
                         'type' => $machine->name ?? 'Standard',
                         'status' => $machine->status,
+                        'organization_id' => $machine->organization_id,
+                        'organization_name' => $machine->organization->name ?? 'Non assignée',
                         'created_at' => $machine->created_at,
                         'updated_at' => $machine->updated_at,
                     ];
@@ -50,7 +55,8 @@ class MachineController extends Controller
         $validator = Validator::make($request->all(), [
             'machine_number' => 'nullable|integer',
             'type' => 'nullable|string|max:255',
-            'status' => 'required|in:available,in_session,maintenance'
+            'status' => 'required|in:available,in_session,maintenance',
+            'organization_id' => 'required|exists:organizations,id'
         ]);
 
         if ($validator->fails()) {
@@ -64,8 +70,11 @@ class MachineController extends Controller
         try {
             $machine = Machine::create([
                 'name' => $request->type ?? 'Standard',
-                'status' => $request->status ?? 'available'
+                'status' => $request->status ?? 'available',
+                'organization_id' => $request->organization_id
             ]);
+
+            $machine->load('organization');
 
             return response()->json([
                 'success' => true,
@@ -75,6 +84,8 @@ class MachineController extends Controller
                     'machine_number' => $machine->id,
                     'type' => $machine->name,
                     'status' => $machine->status,
+                    'organization_id' => $machine->organization_id,
+                    'organization_name' => $machine->organization->name ?? 'Non assignée',
                     'created_at' => $machine->created_at,
                 ]
             ], 201);
@@ -93,7 +104,9 @@ class MachineController extends Controller
     public function show($id)
     {
         try {
-            $machine = Machine::with('activeSession')->findOrFail($id);
+            $machine = Machine::withoutGlobalScope('organization')
+                ->with(['activeSession', 'organization'])
+                ->findOrFail($id);
 
             return response()->json([
                 'success' => true,
@@ -102,6 +115,8 @@ class MachineController extends Controller
                     'machine_number' => $machine->id,
                     'type' => $machine->name,
                     'status' => $machine->status,
+                    'organization_id' => $machine->organization_id,
+                    'organization_name' => $machine->organization->name ?? 'Non assignée',
                     'created_at' => $machine->created_at,
                 ]
             ], 200);
@@ -120,11 +135,12 @@ class MachineController extends Controller
     public function update(Request $request, $id)
     {
         try {
-            $machine = Machine::findOrFail($id);
+            $machine = Machine::withoutGlobalScope('organization')->findOrFail($id);
 
             $validator = Validator::make($request->all(), [
                 'type' => 'sometimes|nullable|string|max:255',
-                'status' => 'sometimes|required|in:available,in_session,maintenance'
+                'status' => 'sometimes|required|in:available,in_session,maintenance',
+                'organization_id' => 'sometimes|required|exists:organizations,id'
             ]);
 
             if ($validator->fails()) {
@@ -142,8 +158,12 @@ class MachineController extends Controller
             if ($request->has('status')) {
                 $machine->status = $request->status;
             }
+            if ($request->has('organization_id')) {
+                $machine->organization_id = $request->organization_id;
+            }
 
             $machine->save();
+            $machine->load('organization');
 
             return response()->json([
                 'success' => true,
@@ -153,6 +173,8 @@ class MachineController extends Controller
                     'machine_number' => $machine->id,
                     'type' => $machine->name,
                     'status' => $machine->status,
+                    'organization_id' => $machine->organization_id,
+                    'organization_name' => $machine->organization->name ?? 'Non assignée',
                     'updated_at' => $machine->updated_at,
                 ]
             ], 200);
@@ -171,7 +193,7 @@ class MachineController extends Controller
     public function destroy($id)
     {
         try {
-            $machine = Machine::findOrFail($id);
+            $machine = Machine::withoutGlobalScope('organization')->findOrFail($id);
 
             // Check if machine has an active session
             if ($machine->activeSession) {
