@@ -3,9 +3,12 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use App\Traits\BelongsToOrganization;
 
 class Payment extends Model
 {
+    use BelongsToOrganization;
+
     protected $fillable = [
         'session_id',
         'amount',
@@ -14,7 +17,8 @@ class Payment extends Model
         'payment_method',
         'payment_date',
         'staff_id',
-        'notes'
+        'notes',
+        'organization_id',
     ];
 
     protected $casts = [

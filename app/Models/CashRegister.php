@@ -3,9 +3,12 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use App\Traits\BelongsToOrganization;
 
 class CashRegister extends Model
 {
+    use BelongsToOrganization;
+
     protected $fillable = [
         'date',
         'opening_balance',
@@ -18,6 +21,7 @@ class CashRegister extends Model
         'opened_at',
         'closed_at',
         'notes',
+        'organization_id',
     ];
 
     // No casts - handle formatting in controller to avoid serialization issues

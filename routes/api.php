@@ -140,6 +140,17 @@ Route::get('/debug/machines-controller', function () {
 // ========== ROUTES SUPER ADMIN UNIQUEMENT ==========
 Route::middleware(['auth:sanctum', 'role:super_admin'])->prefix('super-admin')->group(function () {
 
+    // Gestion des Organisations
+    Route::get('/organizations', [\App\Http\Controllers\SuperAdmin\OrganizationController::class, 'index']);
+    Route::post('/organizations', [\App\Http\Controllers\SuperAdmin\OrganizationController::class, 'store']);
+    Route::get('/organizations/{id}', [\App\Http\Controllers\SuperAdmin\OrganizationController::class, 'show']);
+    Route::put('/organizations/{id}', [\App\Http\Controllers\SuperAdmin\OrganizationController::class, 'update']);
+    Route::delete('/organizations/{id}', [\App\Http\Controllers\SuperAdmin\OrganizationController::class, 'destroy']);
+    Route::post('/organizations/{id}/assign-user', [\App\Http\Controllers\SuperAdmin\OrganizationController::class, 'assignUser']);
+    Route::post('/organizations/{id}/remove-user', [\App\Http\Controllers\SuperAdmin\OrganizationController::class, 'removeUser']);
+    Route::get('/organizations/{id}/users', [\App\Http\Controllers\SuperAdmin\OrganizationController::class, 'users']);
+    Route::get('/organizations/{id}/stats', [\App\Http\Controllers\SuperAdmin\OrganizationController::class, 'stats']);
+
     // Gestion des Utilisateurs
     Route::get('/users', [\App\Http\Controllers\SuperAdmin\UserController::class, 'index']);
     Route::post('/users', [\App\Http\Controllers\SuperAdmin\UserController::class, 'store']);

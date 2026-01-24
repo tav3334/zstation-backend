@@ -4,10 +4,11 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use App\Traits\BelongsToOrganization;
 
 class GameSession extends Model
 {
-    use HasFactory;
+    use HasFactory, BelongsToOrganization;
 
     protected $fillable = [
         'machine_id',
@@ -19,7 +20,8 @@ class GameSession extends Model
         'ended_at',
         'matches_played',
         'computed_price',
-        'status'
+        'status',
+        'organization_id',
     ];
 
     protected $casts = [

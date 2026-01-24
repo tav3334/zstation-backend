@@ -11,6 +11,10 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (Schema::hasTable('cash_registers')) {
+            return;
+        }
+
         Schema::create('cash_registers', function (Blueprint $table) {
             $table->id();
             $table->date('date')->unique();

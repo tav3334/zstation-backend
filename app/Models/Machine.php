@@ -4,14 +4,16 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use App\Traits\BelongsToOrganization;
 
 class Machine extends Model
 {
-    use HasFactory;
+    use HasFactory, BelongsToOrganization;
 
     protected $fillable = [
         'name',
-        'status'
+        'status',
+        'organization_id',
     ];
 
     // ✅ Ajouter active_session aux attributs JSON

@@ -3,9 +3,12 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use App\Traits\BelongsToOrganization;
 
 class ProductSale extends Model
 {
+    use BelongsToOrganization;
+
     protected $fillable = [
         'product_id',
         'staff_id',
@@ -13,7 +16,8 @@ class ProductSale extends Model
         'unit_price',
         'total_price',
         'payment_method',
-        'sale_date'
+        'sale_date',
+        'organization_id',
     ];
 
     protected $casts = [

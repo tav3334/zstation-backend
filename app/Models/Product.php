@@ -3,9 +3,12 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use App\Traits\BelongsToOrganization;
 
 class Product extends Model
 {
+    use BelongsToOrganization;
+
     protected $fillable = [
         'name',
         'category',
@@ -13,7 +16,8 @@ class Product extends Model
         'size',
         'stock',
         'is_available',
-        'image'
+        'image',
+        'organization_id',
     ];
 
     protected $casts = [

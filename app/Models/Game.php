@@ -3,11 +3,14 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use App\Traits\BelongsToOrganization;
 
 class Game extends Model
 {
+    use BelongsToOrganization;
+
     protected $fillable = [
-        'name', 'game_type_id', 'default_price_per_hour', 'active'
+        'name', 'game_type_id', 'default_price_per_hour', 'active', 'organization_id'
     ];
 
     public function type()
