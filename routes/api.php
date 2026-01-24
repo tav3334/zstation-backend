@@ -22,10 +22,6 @@ Route::get('/user', function (Request $request) {
 // Rate limiting: 5 login attempts per minute
 Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:5,1');
 
-// ========== GAMES (Public - needed for session start modal) ==========
-Route::get('/games', [GameController::class, 'index']);
-Route::get('/game-pricings', fn() => \App\Models\GamePricing::all());
-
 // ========== ROUTES PROTÉGÉES (Agent + Admin) ==========
 Route::middleware('auth:sanctum')->group(function () {
 
@@ -33,6 +29,10 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/me', [AuthController::class, 'me']);
     Route::post('/change-password', [AuthController::class, 'changePassword']);
+
+    // GAMES (Protégé - filtré par organisation)
+    Route::get('/games', [GameController::class, 'index']);
+    Route::get('/game-pricings', [GameController::class, 'pricings']);
 
     // MACHINES
     Route::get('/machines', [MachineController::class, 'index']);
