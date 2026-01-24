@@ -806,3 +806,32 @@ Route::get('/temp/migrate-cash-registers-org', function () {
         ], 500);
     }
 });
+
+// 🔧 Fix cash_registers unique constraint - allow multiple orgs per day
+Route::get('/temp/fix-cash-register-unique', function () {
+    try {
+        $results = [];
+
+        // Try to drop the unique index on date
+        try {
+            \Illuminate\Support\Facades\DB::statement('ALTER TABLE cash_registers DROP INDEX cash_registers_date_unique');
+            $results['drop_date_unique'] = 'success';
+        } catch (\Exception $e) {
+            $results['drop_date_unique'] = 'already dropped or not exists: ' . $e->getMessage();
+        }
+
+        // Check current indexes
+        $indexes = \Illuminate\Support\Facades\DB::select('SHOW INDEX FROM cash_registers');
+        $results['current_indexes'] = collect($indexes)->pluck('Key_name')->unique()->values();
+
+        return response()->json([
+            'success' => true,
+            'results' => $results
+        ]);
+    } catch (\Exception $e) {
+        return response()->json([
+            'success' => false,
+            'error' => $e->getMessage()
+        ], 500);
+    }
+});
