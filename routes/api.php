@@ -100,6 +100,42 @@ Route::get('/health', function () {
     ]);
 });
 
+// 🔧 Debug endpoint to check organizations table
+Route::get('/debug/organizations-check', function () {
+    try {
+        // Check if table exists
+        $tableExists = \Illuminate\Support\Facades\Schema::hasTable('organizations');
+
+        if (!$tableExists) {
+            return response()->json([
+                'success' => false,
+                'message' => 'La table organizations n\'existe pas!',
+                'action_required' => 'Veuillez exécuter les migrations sur le serveur de production'
+            ]);
+        }
+
+        // Check organizations
+        $orgs = \App\Models\Organization::all();
+
+        // Check if users table has organization_id
+        $hasOrgColumn = \Illuminate\Support\Facades\Schema::hasColumn('users', 'organization_id');
+
+        return response()->json([
+            'success' => true,
+            'table_exists' => $tableExists,
+            'users_has_organization_id' => $hasOrgColumn,
+            'organizations_count' => $orgs->count(),
+            'organizations' => $orgs
+        ]);
+    } catch (\Exception $e) {
+        return response()->json([
+            'success' => false,
+            'error' => $e->getMessage(),
+            'trace' => explode("\n", $e->getTraceAsString())
+        ], 500);
+    }
+});
+
 // ========== TEMPORARY FIX ENDPOINT ==========
 Route::get('/fix/stop-all-sessions', [FixSessionsController::class, 'stopAllSessions']);
 
@@ -380,6 +416,166 @@ Route::get('/debug/cash-register', function () {
             'line' => $e->getLine(),
             'file' => $e->getFile(),
             'trace' => array_slice(explode("\n", $e->getTraceAsString()), 0, 10)
+        ], 500);
+    }
+});
+
+// 🔧 Temporary endpoint to create organizations table on production
+Route::get('/temp/migrate-organizations', function () {
+    try {
+        $results = [];
+
+        // 1. Create organizations table if not exists
+        if (!\Illuminate\Support\Facades\Schema::hasTable('organizations')) {
+            \Illuminate\Support\Facades\Schema::create('organizations', function ($table) {
+                $table->id();
+                $table->string('name');
+                $table->string('code')->unique();
+                $table->boolean('is_active')->default(true);
+                $table->timestamps();
+            });
+            $results[] = 'Table organizations créée';
+
+            // Insert default organization
+            \Illuminate\Support\Facades\DB::table('organizations')->insert([
+                'name' => 'Organisation par défaut',
+                'code' => 'DEFAULT',
+                'is_active' => true,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+            $results[] = 'Organisation par défaut créée';
+        } else {
+            $results[] = 'Table organizations existe déjà';
+        }
+
+        // 2. Add organization_id to users
+        if (!\Illuminate\Support\Facades\Schema::hasColumn('users', 'organization_id')) {
+            \Illuminate\Support\Facades\Schema::table('users', function ($table) {
+                $table->foreignId('organization_id')->nullable()->constrained('organizations')->nullOnDelete();
+            });
+            $results[] = 'Colonne organization_id ajoutée à users';
+
+            // Assign existing non-super_admin users to default org
+            $defaultOrg = \Illuminate\Support\Facades\DB::table('organizations')->where('code', 'DEFAULT')->first();
+            if ($defaultOrg) {
+                \Illuminate\Support\Facades\DB::table('users')
+                    ->where('role', '!=', 'super_admin')
+                    ->update(['organization_id' => $defaultOrg->id]);
+                $results[] = 'Utilisateurs existants assignés à l\'organisation par défaut';
+            }
+        } else {
+            $results[] = 'Colonne organization_id existe déjà dans users';
+        }
+
+        // 3. Add organization_id to machines
+        if (!\Illuminate\Support\Facades\Schema::hasColumn('machines', 'organization_id')) {
+            \Illuminate\Support\Facades\Schema::table('machines', function ($table) {
+                $table->foreignId('organization_id')->nullable()->constrained('organizations')->nullOnDelete();
+            });
+            $defaultOrg = \Illuminate\Support\Facades\DB::table('organizations')->where('code', 'DEFAULT')->first();
+            if ($defaultOrg) {
+                \Illuminate\Support\Facades\DB::table('machines')->update(['organization_id' => $defaultOrg->id]);
+            }
+            $results[] = 'Colonne organization_id ajoutée à machines';
+        }
+
+        // 4. Add organization_id to customers
+        if (\Illuminate\Support\Facades\Schema::hasTable('customers') && !\Illuminate\Support\Facades\Schema::hasColumn('customers', 'organization_id')) {
+            \Illuminate\Support\Facades\Schema::table('customers', function ($table) {
+                $table->foreignId('organization_id')->nullable()->constrained('organizations')->nullOnDelete();
+            });
+            $defaultOrg = \Illuminate\Support\Facades\DB::table('organizations')->where('code', 'DEFAULT')->first();
+            if ($defaultOrg) {
+                \Illuminate\Support\Facades\DB::table('customers')->update(['organization_id' => $defaultOrg->id]);
+            }
+            $results[] = 'Colonne organization_id ajoutée à customers';
+        }
+
+        // 5. Add organization_id to game_sessions
+        if (!\Illuminate\Support\Facades\Schema::hasColumn('game_sessions', 'organization_id')) {
+            \Illuminate\Support\Facades\Schema::table('game_sessions', function ($table) {
+                $table->foreignId('organization_id')->nullable()->constrained('organizations')->nullOnDelete();
+            });
+            $defaultOrg = \Illuminate\Support\Facades\DB::table('organizations')->where('code', 'DEFAULT')->first();
+            if ($defaultOrg) {
+                \Illuminate\Support\Facades\DB::table('game_sessions')->update(['organization_id' => $defaultOrg->id]);
+            }
+            $results[] = 'Colonne organization_id ajoutée à game_sessions';
+        }
+
+        // 6. Add organization_id to products
+        if (!\Illuminate\Support\Facades\Schema::hasColumn('products', 'organization_id')) {
+            \Illuminate\Support\Facades\Schema::table('products', function ($table) {
+                $table->foreignId('organization_id')->nullable()->constrained('organizations')->nullOnDelete();
+            });
+            $defaultOrg = \Illuminate\Support\Facades\DB::table('organizations')->where('code', 'DEFAULT')->first();
+            if ($defaultOrg) {
+                \Illuminate\Support\Facades\DB::table('products')->update(['organization_id' => $defaultOrg->id]);
+            }
+            $results[] = 'Colonne organization_id ajoutée à products';
+        }
+
+        // 7. Add organization_id to product_sales
+        if (\Illuminate\Support\Facades\Schema::hasTable('product_sales') && !\Illuminate\Support\Facades\Schema::hasColumn('product_sales', 'organization_id')) {
+            \Illuminate\Support\Facades\Schema::table('product_sales', function ($table) {
+                $table->foreignId('organization_id')->nullable()->constrained('organizations')->nullOnDelete();
+            });
+            $defaultOrg = \Illuminate\Support\Facades\DB::table('organizations')->where('code', 'DEFAULT')->first();
+            if ($defaultOrg) {
+                \Illuminate\Support\Facades\DB::table('product_sales')->update(['organization_id' => $defaultOrg->id]);
+            }
+            $results[] = 'Colonne organization_id ajoutée à product_sales';
+        }
+
+        // 8. Add organization_id to payments
+        if (!\Illuminate\Support\Facades\Schema::hasColumn('payments', 'organization_id')) {
+            \Illuminate\Support\Facades\Schema::table('payments', function ($table) {
+                $table->foreignId('organization_id')->nullable()->constrained('organizations')->nullOnDelete();
+            });
+            $defaultOrg = \Illuminate\Support\Facades\DB::table('organizations')->where('code', 'DEFAULT')->first();
+            if ($defaultOrg) {
+                \Illuminate\Support\Facades\DB::table('payments')->update(['organization_id' => $defaultOrg->id]);
+            }
+            $results[] = 'Colonne organization_id ajoutée à payments';
+        }
+
+        // 9. Add organization_id to cash_registers
+        if (\Illuminate\Support\Facades\Schema::hasTable('cash_registers') && !\Illuminate\Support\Facades\Schema::hasColumn('cash_registers', 'organization_id')) {
+            \Illuminate\Support\Facades\Schema::table('cash_registers', function ($table) {
+                $table->foreignId('organization_id')->nullable()->constrained('organizations')->nullOnDelete();
+            });
+            $defaultOrg = \Illuminate\Support\Facades\DB::table('organizations')->where('code', 'DEFAULT')->first();
+            if ($defaultOrg) {
+                \Illuminate\Support\Facades\DB::table('cash_registers')->update(['organization_id' => $defaultOrg->id]);
+            }
+            $results[] = 'Colonne organization_id ajoutée à cash_registers';
+        }
+
+        // 10. Add organization_id to games
+        if (!\Illuminate\Support\Facades\Schema::hasColumn('games', 'organization_id')) {
+            \Illuminate\Support\Facades\Schema::table('games', function ($table) {
+                $table->foreignId('organization_id')->nullable()->constrained('organizations')->nullOnDelete();
+            });
+            $defaultOrg = \Illuminate\Support\Facades\DB::table('organizations')->where('code', 'DEFAULT')->first();
+            if ($defaultOrg) {
+                \Illuminate\Support\Facades\DB::table('games')->update(['organization_id' => $defaultOrg->id]);
+            }
+            $results[] = 'Colonne organization_id ajoutée à games';
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Migration des organisations terminée!',
+            'results' => $results,
+            'organizations_count' => \App\Models\Organization::count()
+        ]);
+    } catch (\Exception $e) {
+        return response()->json([
+            'success' => false,
+            'error' => $e->getMessage(),
+            'line' => $e->getLine(),
+            'file' => $e->getFile()
         ], 500);
     }
 });
