@@ -370,13 +370,36 @@ Route::get("/temp/migrate-match-pricing", [TempMigrationController::class, "exec
 // 🔧 Debug endpoint for cash register - test full today() logic
 Route::get('/debug/cash-register', function () {
     try {
+        // Debug: Check all cash registers and their organization_id
+        $allRegisters = \Illuminate\Support\Facades\DB::table('cash_registers')
+            ->select('id', 'date', 'organization_id')
+            ->orderBy('date', 'desc')
+            ->limit(5)
+            ->get();
+
+        // Check if there's an authenticated user context (there won't be for public route)
+        $authInfo = [
+            'has_user' => auth()->check(),
+            'user_id' => auth()->id(),
+            'user_org' => auth()->user()?->organization_id ?? 'no auth',
+        ];
+
         $today = \Carbon\Carbon::today()->toDateString();
+
+        // Query without global scope to see what's really there
+        $registerRaw = \Illuminate\Support\Facades\DB::table('cash_registers')
+            ->where('date', $today)
+            ->first();
+
         $register = \App\Models\CashRegister::where('date', $today)->first();
 
         if (!$register) {
             return response()->json([
                 'success' => true,
-                'message' => 'No register for today, would create new one'
+                'message' => 'No register for today via Model (Global Scope filtering)',
+                'auth_info' => $authInfo,
+                'all_registers' => $allRegisters,
+                'register_raw' => $registerRaw,
             ]);
         }
 
