@@ -14,47 +14,54 @@ class CashRegisterController extends Controller
     // Obtenir la caisse du jour (ou la créer si elle n'existe pas)
     public function today()
     {
-        $user = Auth::user();
+        try {
+            $user = Auth::user();
 
-        // Vérifier que l'utilisateur a une organisation
-        if (!$user->isSuperAdmin() && !$user->organization_id) {
+            // Vérifier que l'utilisateur a une organisation
+            if (!$user->isSuperAdmin() && !$user->organization_id) {
+                return response()->json([
+                    'error' => 'Utilisateur non assigné à une organisation',
+                    'register' => null
+                ], 400);
+            }
+
+            $today = Carbon::today()->toDateString();
+
+            $register = CashRegister::where('date', $today)->first();
+
+            if (!$register) {
+                // Récupérer le fond de caisse du jour précédent
+                $previousRegister = CashRegister::where('date', '<', $today)
+                    ->orderBy('date', 'desc')
+                    ->first();
+
+                $openingBalance = $previousRegister
+                    ? $previousRegister->closing_balance ?? $previousRegister->current_balance
+                    : 0;
+
+                $register = CashRegister::create([
+                    'date' => $today,
+                    'opening_balance' => $openingBalance,
+                    'total_cash_in' => 0,
+                    'total_change_out' => 0,
+                    'opened_by' => Auth::id(),
+                    'opened_at' => now(),
+                    'organization_id' => $user->organization_id,
+                ]);
+            }
+
+            // Calculer les totaux réels depuis les paiements du jour
+            $this->syncWithPayments($register);
+
             return response()->json([
-                'error' => 'Utilisateur non assigné à une organisation',
-                'register' => null
-            ], 400);
-        }
-
-        $today = Carbon::today()->toDateString();
-
-        $register = CashRegister::where('date', $today)->first();
-
-        if (!$register) {
-            // Récupérer le fond de caisse du jour précédent
-            $previousRegister = CashRegister::where('date', '<', $today)
-                ->orderBy('date', 'desc')
-                ->first();
-
-            $openingBalance = $previousRegister
-                ? $previousRegister->closing_balance ?? $previousRegister->current_balance
-                : 0;
-
-            $register = CashRegister::create([
-                'date' => $today,
-                'opening_balance' => $openingBalance,
-                'total_cash_in' => 0,
-                'total_change_out' => 0,
-                'opened_by' => Auth::id(),
-                'opened_at' => now(),
-                'organization_id' => $user->organization_id,
+                'register' => $this->formatRegister($register),
             ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'error' => $e->getMessage(),
+                'register' => null
+            ], 500);
         }
-
-        // Calculer les totaux réels depuis les paiements du jour
-        $this->syncWithPayments($register);
-
-        return response()->json([
-            'register' => $this->formatRegister($register),
-        ]);
     }
 
     // Synchroniser avec les paiements réels
