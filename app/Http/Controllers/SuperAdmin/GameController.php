@@ -41,6 +41,7 @@ class GameController extends Controller
                                 'duration_minutes' => $pricing->duration_minutes,
                                 'matches_count' => $pricing->matches_count,
                                 'price' => $pricing->price,
+                                'description' => $pricing->description,
                             ];
                         }),
                         'created_at' => $game->created_at,
@@ -333,6 +334,7 @@ class GameController extends Controller
             'price' => 'required|numeric|min:0',
             'duration_minutes' => 'nullable|integer|min:1',
             'matches_count' => 'nullable|integer|min:1',
+            'description' => 'nullable|string|max:255',
         ]);
 
         if ($validator->fails()) {
@@ -360,6 +362,7 @@ class GameController extends Controller
                 'duration_minutes' => $request->duration_minutes,
                 'matches_count' => $request->matches_count,
                 'price' => $request->price,
+                'description' => $request->description,
             ]);
 
             return response()->json([
@@ -385,6 +388,7 @@ class GameController extends Controller
             'price' => 'required|numeric|min:0',
             'duration_minutes' => 'nullable|integer|min:1',
             'matches_count' => 'nullable|integer|min:1',
+            'description' => 'nullable|string|max:255',
         ]);
 
         if ($validator->fails()) {
@@ -404,6 +408,7 @@ class GameController extends Controller
                 'price' => $request->price,
                 'duration_minutes' => $request->duration_minutes,
                 'matches_count' => $request->matches_count,
+                'description' => $request->description,
             ]);
 
             return response()->json([

@@ -11,7 +11,8 @@ class GamePricing extends Model
         'pricing_mode_id',
         'duration_minutes',
         'matches_count',
-        'price'
+        'price',
+        'description'
     ];
 
     protected $casts = [
