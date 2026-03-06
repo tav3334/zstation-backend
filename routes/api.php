@@ -380,6 +380,20 @@ Route::get('/create-admin-ziad-temp', function () {
 // ========== TEMPORARY MIGRATION ENDPOINT (DELETE AFTER USE) ==========
 Route::get("/temp/migrate-match-pricing", [TempMigrationController::class, "executeMatchPricingMigration"]);
 
+Route::get("/temp/add-description-column", function () {
+    try {
+        if (!\Illuminate\Support\Facades\Schema::hasColumn('game_pricings', 'description')) {
+            \Illuminate\Support\Facades\Schema::table('game_pricings', function ($table) {
+                $table->string('description')->nullable()->after('price');
+            });
+            return response()->json(['success' => true, 'message' => 'Colonne description ajoutée avec succès']);
+        }
+        return response()->json(['success' => true, 'message' => 'Colonne description existe déjà']);
+    } catch (\Exception $e) {
+        return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
+    }
+});
+
 // 🔧 Debug endpoint for cash register - test full today() logic
 Route::get('/debug/cash-register', function () {
     try {
