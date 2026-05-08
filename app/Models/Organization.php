@@ -62,4 +62,14 @@ class Organization extends Model
     {
         return $this->hasMany(Game::class);
     }
+
+    public function subscriptions()
+    {
+        return $this->hasMany(Subscription::class)->latest();
+    }
+
+    public function activeSubscription()
+    {
+        return $this->hasOne(Subscription::class)->latest();
+    }
 }

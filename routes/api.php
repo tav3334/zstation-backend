@@ -79,6 +79,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/products/sales', [ProductController::class, 'sales']);
     Route::get('/products/low-stock', [ProductController::class, 'lowStock']);
 
+    // ABONNEMENT (statut de l'org de l'utilisateur connecté)
+    Route::get('/subscription/status', [\App\Http\Controllers\SuperAdmin\SubscriptionController::class, 'status']);
+
 });
 
 // ========== ROUTES ADMIN UNIQUEMENT ==========
@@ -225,6 +228,23 @@ Route::middleware(['auth:sanctum', 'role:super_admin'])->prefix('super-admin')->
     Route::post('/games/{id}/pricings', [\App\Http\Controllers\SuperAdmin\GameController::class, 'addPricing']);
     Route::put('/games/{gameId}/pricings/{pricingId}', [\App\Http\Controllers\SuperAdmin\GameController::class, 'updatePricing']);
     Route::delete('/games/{gameId}/pricings/{pricingId}', [\App\Http\Controllers\SuperAdmin\GameController::class, 'deletePricing']);
+
+    // ========== ABONNEMENTS ==========
+    // Plans
+    Route::get('/subscription-plans', [\App\Http\Controllers\SuperAdmin\SubscriptionPlanController::class, 'index']);
+    Route::post('/subscription-plans', [\App\Http\Controllers\SuperAdmin\SubscriptionPlanController::class, 'store']);
+    Route::get('/subscription-plans/{id}', [\App\Http\Controllers\SuperAdmin\SubscriptionPlanController::class, 'show']);
+    Route::put('/subscription-plans/{id}', [\App\Http\Controllers\SuperAdmin\SubscriptionPlanController::class, 'update']);
+    Route::post('/subscription-plans/{id}', [\App\Http\Controllers\SuperAdmin\SubscriptionPlanController::class, 'update']); // _method PUT compat
+    Route::delete('/subscription-plans/{id}', [\App\Http\Controllers\SuperAdmin\SubscriptionPlanController::class, 'destroy']);
+
+    // Abonnements des organisations
+    Route::get('/subscriptions', [\App\Http\Controllers\SuperAdmin\SubscriptionController::class, 'index']);
+    Route::post('/subscriptions', [\App\Http\Controllers\SuperAdmin\SubscriptionController::class, 'store']);
+    Route::get('/subscriptions/{id}', [\App\Http\Controllers\SuperAdmin\SubscriptionController::class, 'show']);
+    Route::put('/subscriptions/{id}', [\App\Http\Controllers\SuperAdmin\SubscriptionController::class, 'update']);
+    Route::post('/subscriptions/{id}', [\App\Http\Controllers\SuperAdmin\SubscriptionController::class, 'update']); // _method PUT compat
+    Route::post('/subscriptions/{id}/toggle', [\App\Http\Controllers\SuperAdmin\SubscriptionController::class, 'toggle']);
 
     // Récupérer les modes de tarification disponibles
     Route::get('/pricing-modes', function () {
